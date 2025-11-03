@@ -75,9 +75,10 @@ export default function Step2Ticket() {
       return;
     }
 
-    const appraisedValue = parseFloat(appraisalData.appraisedValue.replace(/,/g, ""));
-    const loanValue = parseFloat(loanAmount.replace(/,/g, ""));
-    
+    //const appraisedValue = parseFloat(appraisalData.appraisedValue.replace(/,/g, ""));
+    //const loanValue = parseFloat(loanAmount.replace(/,/g, ""));
+    const appraisedValue = Number(String(appraisalData.appraisedValue).replace(/[^\d.-]/g, ""));
+    const loanValue = Number(String(loanAmount).replace(/[^\d.-]/g, ""));
     if (loanValue > appraisedValue * 0.9) {
       toast.warning("จำนวนเงินกู้สูงกว่า 90% ของมูลค่าประเมิน");
     }
@@ -101,6 +102,11 @@ export default function Step2Ticket() {
   if (!appraisalData) {
     return null;
   }
+  const displayMoney = (v: unknown, fallback = "-") => {
+  if (v == null) return fallback;
+  const n = Number(String(v).replace(/[^\d.-]/g, "")); // ล้างคอมมา/สัญลักษณ์
+  return Number.isFinite(n) ? n.toLocaleString("th-TH") : fallback;
+};
 
   return (
     <div className="min-h-screen bg-background">
@@ -151,11 +157,11 @@ export default function Step2Ticket() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">มูลค่าประเมิน</p>
-                    <p className="font-medium">{appraisalData.appraisedValue} บาท</p>
+                    <p className="font-medium">{displayMoney(appraisalData?.appraisedValue)} บาท</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">จำนวนเงินกู้</p>
-                    <p className="font-medium text-primary text-lg">{loanAmount || "0"} บาท</p>
+                    <p className="font-medium text-primary text-lg">{displayMoney(loanAmount, "0")} บาท</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">อัตราดอกเบี้ย</p>
@@ -196,7 +202,7 @@ export default function Step2Ticket() {
                     onChange={(e) => setLoanAmount(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    มูลค่าประเมิน: {appraisalData.appraisedValue} บาท
+                    มูลค่าประเมิน: {displayMoney(appraisalData?.appraisedValue)} บาท
                   </p>
                 </div>
 
@@ -360,7 +366,7 @@ export default function Step2Ticket() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">มูลค่าประเมิน</span>
-                      <span className="font-medium">{appraisalData.appraisedValue} บาท</span>
+                      <span className="font-medium">{displayMoney(appraisalData?.appraisedValue)} บาท</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">หลักฐาน</span>
@@ -375,7 +381,7 @@ export default function Step2Ticket() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">เงินกู้</span>
-                        <span className="font-medium">{loanAmount} บาท</span>
+                        <span className="font-medium">{displayMoney(loanAmount, "0")} บาท</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">อัตราดอกเบี้ย</span>

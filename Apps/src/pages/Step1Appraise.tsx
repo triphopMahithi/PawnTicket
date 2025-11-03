@@ -65,6 +65,7 @@ export default function Step1Appraise() {
   const [appraisedValue, setAppraisedValue] = useState("");
   const [appraisalDate, setAppraisalDate] = useState<Date>();
   const [files, setFiles] = useState<File[]>([]);
+  const appraisedValueNumber = Number((appraisedValue || "").replace(/[^\d.-]/g, "")) || 0;
 
   const handleSaveDraft = () => {
     toast.success("บันทึกแบบร่างสำเร็จ");
@@ -108,7 +109,7 @@ export default function Step1Appraise() {
         appraiser,
         itemType,
         description,
-        appraisedValue,
+        appraisedValue : appraisedValueNumber,
         appraisalDate,
         filesCount: files.length,
       })

@@ -114,6 +114,11 @@ export default function Step3Payment() {
     : 0;
   const remainingAmount = loanAmount - paidAmount;
 
+  const displayMoney = (v: unknown, fallback = "-") => {
+    if (v == null) return fallback;
+    const n = Number(String(v).replace(/[^\d.-]/g, "")); // ล้างคอมมา/สัญลักษณ์
+    return Number.isFinite(n) ? n.toLocaleString("th-TH") : fallback;
+};
   return (
     <div className="min-h-screen bg-background">
       <div className="bg-card border-b sticky top-0 z-10">
@@ -241,7 +246,7 @@ export default function Step3Payment() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">จำนวนเงิน</span>
-                      <span className="font-medium">{paymentAmount} บาท</span>
+                      <span className="font-medium">{displayMoney(paymentAmount)} บาท</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">วิธีชำระ</span>
@@ -273,13 +278,13 @@ export default function Step3Payment() {
               <div className="space-y-4">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">ยอดเงินกู้</p>
-                  <p className="text-2xl font-bold">{ticketData.loanAmount} บาท</p>
+                  <p className="text-2xl font-bold">{displayMoney(ticketData?.loanAmount)} บาท</p>
                 </div>
 
                 <div className="border-t pt-4">
                   <p className="text-sm text-muted-foreground mb-1">ยอดชำระรวม</p>
                   <p className="text-xl font-semibold text-success">
-                    {paymentAmount || "0"} บาท
+                    {displayMoney(paymentAmount, "0")} บาท
                   </p>
                 </div>
 
