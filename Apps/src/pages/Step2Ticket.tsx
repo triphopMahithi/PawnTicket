@@ -425,7 +425,7 @@ export default function Step2Ticket() {
         </div>
 
         <div className="mt-8 pt-6 border-t flex justify-between">
-          <Button variant="outline" onClick={() => navigate("/")}>
+          <Button variant="outline" onClick={() => navigate("/step-1")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             กลับ
           </Button>
