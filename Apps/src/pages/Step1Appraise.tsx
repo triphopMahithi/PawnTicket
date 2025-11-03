@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Save, ArrowRight } from "lucide-react";
 import { Stepper } from "@/components/Stepper";
 import { CustomerSearch } from "@/components/CustomerSearch";
+import { EmployeeSearch } from "@/components/EmployeeSearch";
 import { FileUploader } from "@/components/FileUploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +67,7 @@ export default function Step1Appraise() {
   const [appraisalDate, setAppraisalDate] = useState<Date>();
   const [files, setFiles] = useState<File[]>([]);
   const appraisedValueNumber = Number((appraisedValue || "").replace(/[^\d.-]/g, "")) || 0;
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
   const handleSaveDraft = () => {
     toast.success("บันทึกแบบร่างสำเร็จ");
@@ -159,6 +161,14 @@ export default function Step1Appraise() {
 
             <div className="bg-card rounded-lg border p-6">
               <h2 className="text-xl font-semibold mb-4">ผู้ประเมิน</h2>
+              <EmployeeSearch
+                onSelect={(emp) => {
+                  setSelectedEmployee(emp);
+                  setAppraiser(emp.id); // หากยังคงเก็บเป็น id สำหรับ sessionStorage
+                }}
+                selectedEmployee={selectedEmployee}
+                allowedPositions={["STAFF","SUPERVISOR","MANAGER"]}
+              />
               <div>
                 <Label htmlFor="appraiser">
                   เลือกผู้ประเมิน <span className="text-destructive">*</span>
@@ -219,10 +229,14 @@ export default function Step1Appraise() {
                 </div>
 
                 <div>
+                    
+                   {/** 
                   <Label>สถานะ</Label>
                   <div className="mt-2">
                     <Badge variant="secondary">ในคลัง</Badge>
                   </div>
+                  */}
+
                 </div>
               </div>
             </div>
