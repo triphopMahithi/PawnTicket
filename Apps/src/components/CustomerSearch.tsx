@@ -13,32 +13,29 @@ import {
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
+interface Address {
+  houseNo?: string;
+  street?: string;
+  tambon: string;
+  amphoe: string;
+  province: string;
+  postalCode: string; // 5 digits
+  note?: string;
+}
+
 interface Customer {
   id: string;
   name: string;
-  nationalId: string;
-  phone: string;
+  nationalId: string; // digits only
+  phone: string;      // digits only
+  dateOfBirthISO?: string; // YYYY-MM-DD
+  address?: Address;
 }
 
 const mockCustomers: Customer[] = [
-  {
-    id: "1",
-    name: "สมชาย ใจดี",
-    nationalId: "1234567890123",
-    phone: "0812345678",
-  },
-  {
-    id: "2",
-    name: "สมหญิง รักสุข",
-    nationalId: "9876543210987",
-    phone: "0898765432",
-  },
-  {
-    id: "3",
-    name: "วิชัย เจริญสุข",
-    nationalId: "5551234567890",
-    phone: "0856789012",
-  },
+  { id: "1", name: "สมชาย ใจดี",   nationalId: "1234567890123", phone: "0812345678" },
+  { id: "2", name: "สมหญิง รักสุข", nationalId: "9876543210987", phone: "0898765432" },
+  { id: "3", name: "วิชัย เจริญสุข", nationalId: "5551234567890", phone: "0856789012" },
 ];
 
 interface CustomerSearchProps {
@@ -46,77 +43,233 @@ interface CustomerSearchProps {
   selectedCustomer: Customer | null;
 }
 
-export function CustomerSearch({
-  onSelect,
-  selectedCustomer,
-}: CustomerSearchProps) {
+export function CustomerSearch({ onSelect, selectedCustomer }: CustomerSearchProps) {
+  const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({
+
+  const [newCustomer, setNewCustomer] = useState<{
+    name: string;
+    nationalId: string; // digits only
+    phone: string;      // digits only
+    address: Address;
+  }>({
     name: "",
     nationalId: "",
     phone: "",
+    address: {
+      houseNo: "",
+      street: "",
+      tambon: "",
+      amphoe: "",
+      province: "",
+      postalCode: "",
+      note: "",
+    },
   });
 
-  const filteredCustomers = mockCustomers.filter(
-    (customer) =>
-      customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.nationalId.includes(searchQuery) ||
-      customer.phone.includes(searchQuery)
-  );
+  // วันเกิดแบบ native input date
+  const [dobISO, setDobISO] = useState<string>("");
+  const TODAY = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+
+  // ---------- Utils ----------
+  const onlyDigits = (s: string) => s.replace(/\D/g, "");
 
   const formatNationalId = (id: string) => {
-    const cleaned = id.replace(/\D/g, "");
-    if (cleaned.length <= 1) return cleaned;
-    if (cleaned.length <= 5)
-      return `${cleaned.slice(0, 1)}-${cleaned.slice(1)}`;
-    if (cleaned.length <= 10)
-      return `${cleaned.slice(0, 1)}-${cleaned.slice(1, 5)}-${cleaned.slice(5)}`;
-    if (cleaned.length <= 12)
-      return `${cleaned.slice(0, 1)}-${cleaned.slice(1, 5)}-${cleaned.slice(5, 10)}-${cleaned.slice(10)}`;
-    return `${cleaned.slice(0, 1)}-${cleaned.slice(1, 5)}-${cleaned.slice(5, 10)}-${cleaned.slice(10, 12)}-${cleaned.slice(12, 13)}`;
+    const d = onlyDigits(id).slice(0, 13);
+    const segs = [1, 4, 5, 2, 1];
+    let out: string[] = [];
+    let i = 0;
+    for (const len of segs) {
+      const part = d.slice(i, i + len);
+      if (!part) break;
+      out.push(part);
+      i += len;
+    }
+    return out.join("-");
+  };
+
+  const isValidThaiID = (id: string | number) => {
+    const s = String(id);
+    const d = s.replace(/\D/g, "");
+    if (d.length !== 13) return false;
+    let sum = 0;
+    for (let i = 0; i < 12; i++) sum += Number(d[i]) * (13 - i);
+    const check = (11 - (sum % 11)) % 10;
+    return check === Number(d[12]);
   };
 
   const formatPhone = (phone: string) => {
-    const cleaned = phone.replace(/\D/g, "");
-    if (cleaned.startsWith("66")) {
-      return `+${cleaned.slice(0, 2)} ${cleaned.slice(2, 3)} ${cleaned.slice(3, 7)} ${cleaned.slice(7)}`;
+    const d = onlyDigits(phone);
+    if (d.startsWith("66")) {
+      const body = d.slice(2); // 9 digits
+      const p1 = body.slice(0, 1);
+      const p2 = body.slice(1, 5);
+      const p3 = body.slice(5, 9);
+      return `+66 ${p1}${p2 ? ` ${p2}` : ""}${p3 ? ` ${p3}` : ""}`.trim();
     }
-    if (cleaned.length <= 3) return cleaned;
-    if (cleaned.length <= 6)
-      return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
-    return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
+    const p1 = d.slice(0, 3);
+    const p2 = d.slice(3, 6);
+    const p3 = d.slice(6, 10);
+    return [p1, p2, p3].filter(Boolean).join("-");
   };
 
+  const isValidThaiMobile = (phone: string) => {
+    const d = onlyDigits(phone);
+    if (/^0[689]\d{8}$/.test(d)) return true;
+    if (/^66[689]\d{7}$/.test(d)) return true;
+    return false;
+  };
+
+  const toE164 = (phone: string) => {
+    const d = onlyDigits(phone);
+    if (d.startsWith("66") && d.length === 11) return `+${d}`;
+    if (d.startsWith("0") && d.length === 10) return `+66${d.slice(1)}`;
+    return null;
+  };
+
+  const isValidPostalCode = (pc: string) => /^\d{5}$/.test(onlyDigits(pc));
+
+  const formatAddressLine = (a?: Address) => {
+    if (!a) return "-";
+    const parts = [
+      a.houseNo && `เลขที่ ${a.houseNo}`,
+      a.street && `ถ.${a.street}`,
+      a.tambon && `ต.${a.tambon}`,
+      a.amphoe && `อ.${a.amphoe}`,
+      a.province && `จ.${a.province}`,
+      a.postalCode,
+    ].filter(Boolean);
+    return parts.length ? parts.join(" ") : "-";
+  };
+
+  // ---------- Search ----------
+  const filteredCustomers = customers.filter((c) => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return false;
+    const qDigits = onlyDigits(searchQuery);
+
+    const addrHit =
+      c.address &&
+      (
+        (c.address.tambon || "").toLowerCase().includes(q) ||
+        (c.address.amphoe || "").toLowerCase().includes(q) ||
+        (c.address.province || "").toLowerCase().includes(q) ||
+        (c.address.street || "").toLowerCase().includes(q) ||
+        (c.address.houseNo || "").toLowerCase().includes(q) ||
+        onlyDigits(c.address.postalCode || "").includes(qDigits)
+      );
+
+    return (
+      c.name.toLowerCase().includes(q) ||
+      onlyDigits(c.nationalId).includes(qDigits) ||
+      onlyDigits(c.phone).includes(qDigits) ||
+      !!addrHit
+    );
+  });
+
+  // ---------- Create ----------
   const handleCreateCustomer = () => {
-    if (!newCustomer.name || !newCustomer.nationalId || !newCustomer.phone) {
-      toast.error("กรุณากรอกข้อมูลให้ครบถ้วน");
+    const name = newCustomer.name.trim();
+    const nat = onlyDigits(newCustomer.nationalId).slice(0, 13);
+    const rawPhone = onlyDigits(newCustomer.phone);
+    const phone = rawPhone.startsWith("66") ? rawPhone.slice(0, 11) : rawPhone.slice(0, 10);
+    const addr = newCustomer.address;
+
+    if (!name || !nat || !phone) {
+      toast.error("กรุณากรอกข้อมูลให้ครบถ้วน (ชื่อ-บัตรประชาชน-เบอร์โทร)");
+      return;
+    }
+    //if (nat.length !== 13 || !isValidThaiID(nat)) {
+    if (nat.length !== 13) {
+      toast.error("เลขบัตรประชาชนไม่ถูกต้อง");
+      return;
+    }
+    if (!isValidThaiMobile(phone)) {
+      toast.error("เบอร์โทรศัพท์ไม่ถูกต้อง");
+      return;
+    }
+
+    // เช็กวันเกิดจาก dobISO
+    if (!dobISO) {
+      toast.error("กรุณาเลือกวันเกิด");
+      return;
+    }
+    const dobDate = new Date(dobISO);
+    const today = new Date(TODAY);
+    if (isNaN(dobDate.getTime()) || dobDate > today) {
+      toast.error("วันเกิดต้องไม่เป็นวันที่ในอนาคต");
+      return;
+    }
+
+    // ที่อยู่จำเป็น
+    if (!addr.tambon || !addr.amphoe || !addr.province || !addr.postalCode) {
+      toast.error("กรุณากรอก ตำบล/อำเภอ/จังหวัด/รหัสไปรษณีย์ ให้ครบ");
+      return;
+    }
+    if (!isValidPostalCode(addr.postalCode)) {
+      toast.error("รหัสไปรษณีย์ต้องเป็นตัวเลข 5 หลัก");
+      return;
+    }
+
+    // กันซ้ำด้วยเลขบัตร/เบอร์
+    const e164 = toE164(phone);
+    const dup = customers.find(
+      (c) => onlyDigits(c.nationalId) === nat || toE164(c.phone) === e164
+    );
+    if (dup) {
+      toast.error("ลูกค้าคนนี้มีอยู่แล้วในระบบ");
       return;
     }
 
     const customer: Customer = {
-      id: Date.now().toString(),
-      ...newCustomer,
+      id: `C${Date.now()}`,
+      name,
+      nationalId: nat,
+      phone,
+      dateOfBirthISO: dobISO, // เก็บเป็น "YYYY-MM-DD"
+      address: {
+        houseNo: addr.houseNo?.trim() || undefined,
+        street: addr.street?.trim() || undefined,
+        tambon: addr.tambon.trim(),
+        amphoe: addr.amphoe.trim(),
+        province: addr.province.trim(),
+        postalCode: onlyDigits(addr.postalCode).slice(0, 5),
+        note: addr.note?.trim() || undefined,
+      },
     };
 
+    setCustomers((prev) => [customer, ...prev]);
     onSelect(customer);
     setIsOpen(false);
-    setNewCustomer({ name: "", nationalId: "", phone: "" });
+
+    // reset form
+    setNewCustomer({
+      name: "",
+      nationalId: "",
+      phone: "",
+      address: { houseNo: "", street: "", tambon: "", amphoe: "", province: "", postalCode: "", note: "" },
+    });
+    setDobISO(""); //  รีเซ็ตวันเกิด
+
     toast.success("เพิ่มข้อมูลลูกค้าสำเร็จ");
   };
 
   return (
     <div className="space-y-4">
+      {/* Search + Create */}
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="ค้นหาด้วยชื่อ, เลขบัตรประชาชน, หรือเบอร์โทร"
+            placeholder="ค้นหาด้วยชื่อ, เลขบัตร, เบอร์โทร, ที่อยู่ หรือรหัสไปรษณีย์"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
           />
         </div>
+
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button variant="outline">
@@ -124,15 +277,16 @@ export function CustomerSearch({
               สร้างใหม่
             </Button>
           </DialogTrigger>
-          <DialogContent>
+
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>เพิ่มข้อมูลลูกค้าใหม่</DialogTitle>
-              <DialogDescription>
-                กรอกข้อมูลลูกค้าให้ครบถ้วน
-              </DialogDescription>
+              <DialogDescription>กรอกข้อมูลลูกค้าให้ครบถ้วน</DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+              {/* ชื่อ */}
+              <div className="md:col-span-2">
                 <Label htmlFor="name">
                   ชื่อ-นามสกุล <span className="text-destructive">*</span>
                 </Label>
@@ -145,60 +299,202 @@ export function CustomerSearch({
                   }
                 />
               </div>
+
+              {/* บัตร ปชช. */}
               <div>
                 <Label htmlFor="nationalId">
                   เลขบัตรประชาชน <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="nationalId"
+                  inputMode="numeric"
                   placeholder="1-2345-67890-12-3"
                   value={formatNationalId(newCustomer.nationalId)}
                   onChange={(e) =>
                     setNewCustomer({
                       ...newCustomer,
-                      nationalId: e.target.value.replace(/\D/g, ""),
+                      nationalId: onlyDigits(e.target.value),
                     })
                   }
                   maxLength={17}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  13 หลัก
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">13 หลัก</p>
               </div>
+
+              {/* เบอร์โทร */}
               <div>
                 <Label htmlFor="phone">
                   เบอร์โทรศัพท์ <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="phone"
-                  placeholder="081-234-5678"
+                  inputMode="tel"
+                  placeholder="081-234-5678 หรือ +66 8 1234 5678"
                   value={formatPhone(newCustomer.phone)}
-                  onChange={(e) =>
-                    setNewCustomer({
-                      ...newCustomer,
-                      phone: e.target.value.replace(/\D/g, ""),
-                    })
-                  }
-                  maxLength={12}
+                  onChange={(e) => {
+                    const d = onlyDigits(e.target.value);
+                    const limited = d.startsWith("66") ? d.slice(0, 11) : d.slice(0, 10);
+                    setNewCustomer({ ...newCustomer, phone: limited });
+                  }}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  10 หลัก (เริ่มต้นด้วย 0)
+                  10 หลัก (ขึ้นต้น 06/08/09) หรือ +66 ตามมาตรฐาน
                 </p>
               </div>
-              <Button onClick={handleCreateCustomer} className="w-full">
-                บันทึก
-              </Button>
+
+              {/* วันเกิด (native date input) */}
+              <div>
+                <Label htmlFor="dob">
+                  วันเกิด <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="dob"
+                  type="date"
+                  value={dobISO}
+                  onChange={(e) => setDobISO(e.target.value)}
+                  max={TODAY}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  สามารถพิมพ์เป็นปี-เดือน-วันได้โดยตรง เช่น 1998-07-15
+                </p>
+              </div>
+
+              {/* ที่อยู่ */}
+              <div className="md:col-span-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="houseNo">บ้านเลขที่</Label>
+                    <Input
+                      id="houseNo"
+                      placeholder="99/9"
+                      value={newCustomer.address.houseNo}
+                      onChange={(e) =>
+                        setNewCustomer({
+                          ...newCustomer,
+                          address: { ...newCustomer.address, houseNo: e.target.value },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="street">ถนน</Label>
+                    <Input
+                      id="street"
+                      placeholder="พหลโยธิน"
+                      value={newCustomer.address.street}
+                      onChange={(e) =>
+                        setNewCustomer({
+                          ...newCustomer,
+                          address: { ...newCustomer.address, street: e.target.value },
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="tambon">
+                      ตำบล/แขวง <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="tambon"
+                      placeholder="สุเทพ"
+                      value={newCustomer.address.tambon}
+                      onChange={(e) =>
+                        setNewCustomer({
+                          ...newCustomer,
+                          address: { ...newCustomer.address, tambon: e.target.value },
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="amphoe">
+                      อำเภอ/เขต <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="amphoe"
+                      placeholder="เมืองเชียงใหม่"
+                      value={newCustomer.address.amphoe}
+                      onChange={(e) =>
+                        setNewCustomer({
+                          ...newCustomer,
+                          address: { ...newCustomer.address, amphoe: e.target.value },
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="province">
+                      จังหวัด <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="province"
+                      placeholder="เชียงใหม่"
+                      value={newCustomer.address.province}
+                      onChange={(e) =>
+                        setNewCustomer({
+                          ...newCustomer,
+                          address: { ...newCustomer.address, province: e.target.value },
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="postalCode">
+                      รหัสไปรษณีย์ <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="postalCode"
+                      inputMode="numeric"
+                      maxLength={5}
+                      placeholder="50000"
+                      value={newCustomer.address.postalCode}
+                      onChange={(e) =>
+                        setNewCustomer({
+                          ...newCustomer,
+                          address: {
+                            ...newCustomer.address,
+                            postalCode: onlyDigits(e.target.value).slice(0, 5),
+                          },
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <Label htmlFor="note">หมายเหตุ (ถ้ามี)</Label>
+                    <Input
+                      id="note"
+                      placeholder="เช่น ใกล้ตลาด/วัด/ปากซอย ..."
+                      value={newCustomer.address.note}
+                      onChange={(e) =>
+                        setNewCustomer({
+                          ...newCustomer,
+                          address: { ...newCustomer.address, note: e.target.value },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* ปุ่มบันทึก */}
+              <div className="md:col-span-2">
+                <Button onClick={handleCreateCustomer} className="w-full">
+                  บันทึก
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
+      {/* Search Result */}
       {searchQuery && (
         <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
           {filteredCustomers.length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground">
-              ไม่พบข้อมูลลูกค้า
-            </div>
+            <div className="p-4 text-center text-muted-foreground">ไม่พบข้อมูลลูกค้า</div>
           ) : (
             filteredCustomers.map((customer) => (
               <button
@@ -214,15 +510,21 @@ export function CustomerSearch({
                 <p className="text-sm text-muted-foreground">
                   {formatNationalId(customer.nationalId)} | {formatPhone(customer.phone)}
                 </p>
+                {customer.address && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatAddressLine(customer.address)}
+                  </p>
+                )}
               </button>
             ))
           )}
         </div>
       )}
 
+      {/* Selected */}
       {selectedCustomer && (
-        <div className="p-4 bg-card rounded-lg border">
-          <p className="text-sm text-muted-foreground mb-1">ลูกค้าที่เลือก</p>
+        <div className="p-4 bg-card rounded-lg border space-y-1">
+          <p className="text-sm text-muted-foreground">ลูกค้าที่เลือก</p>
           <p className="font-semibold">{selectedCustomer.name}</p>
           <p className="text-sm text-muted-foreground">
             {formatNationalId(selectedCustomer.nationalId)}
@@ -230,6 +532,25 @@ export function CustomerSearch({
           <p className="text-sm text-muted-foreground">
             {formatPhone(selectedCustomer.phone)}
           </p>
+          {selectedCustomer.dateOfBirthISO && (
+            <p className="text-sm text-muted-foreground">
+              วันเกิด: {new Date(selectedCustomer.dateOfBirthISO).toLocaleDateString("th-TH", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </p>
+          )}
+          {selectedCustomer.address && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                ที่อยู่: {formatAddressLine(selectedCustomer.address)}
+              </p>
+              {selectedCustomer.address.note && (
+                <p className="text-xs text-muted-foreground">หมายเหตุ: {selectedCustomer.address.note}</p>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>
