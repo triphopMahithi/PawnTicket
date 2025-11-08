@@ -9,6 +9,7 @@ import Step2Ticket from "./pages/Step2Ticket";
 import Step3Payment from "./pages/Step3Payment";
 import Success from "./pages/Success";
 import NotFound from "./pages/NotFound";
+import History  from "./pages/History";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/history" element={<History/>}></Route>
           <Route path="/step-1" element={<Step1Appraise />} />
           <Route path="/step-2" element={<Step2Ticket />} />
           <Route path="/step-3" element={<Step3Payment />} />

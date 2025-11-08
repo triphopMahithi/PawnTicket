@@ -19,10 +19,15 @@ export default function Index() {
               <p className="text-xs text-muted-foreground">Pawn Shop Management</p>
             </div>
           </div>
-          <Button onClick={() => navigate("/step-1")}>
-            <Plus className="w-4 h-4 mr-2" />
-            สร้างตั๋วจำนำใหม่
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate("/step-1")}>
+              <Plus className="w-4 h-4 mr-2" />
+              สร้างตั๋วจำนำใหม่
+            </Button>
+            <Button onClick={() => navigate("/History")}>
+              ประวัติ
+            </Button>
+          </div>
         </div>
       </header>
 
