@@ -108,7 +108,6 @@ export default function Step3Payment() {
   if (!appraisalData || !ticketData) {
     return null;
   }
-
   const loanAmount = parseFloat(ticketData.loanAmount.replace(/,/g, ""));
   const paidAmount = paymentAmount
     ? parseFloat(paymentAmount.replace(/,/g, ""))
@@ -242,7 +241,7 @@ export default function Step3Payment() {
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">ผู้ชำระ</span>
+                      <span className="text-muted-foreground">ผู้รับชำระ</span>
                       <span className="font-medium">{appraisalData.customer.name}</span>
                     </div>
                     <div className="flex justify-between">
@@ -257,6 +256,48 @@ export default function Step3Payment() {
                       <span className="text-muted-foreground">วิธีชำระ</span>
                       <span className="font-medium">
                         {paymentMethods.find((m) => m.value === paymentMethod)?.label}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">ประเมินโดย</span>
+                      <span className="font-medium">
+                        {appraisalData?.appraiserName ?? appraisalData?.appraiser ?? "-"}  
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">รหัสประจำตัวผู้ประเมิน</span>
+                      <span className="font-medium">
+                      {
+                        (typeof appraisalData?.appraiser === "object"
+                          ? appraisalData?.appraiser?.id
+                          : appraisalData?.appraiser) ?? "-"
+                      }
+                      </span>
+                    </div>
+
+                     {/** ItemType */}
+                    <div className="bg-card rounded-lg border p-6">
+                      <h2 className="text-xl font-semibold mb-4">ข้อมูลทรัพย์</h2>
+
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">ประเภททรัพย์</span>
+                          <span className="font-medium">{(appraisalData?.itemType)}</span>
+                      </div>
+
+                        <div>
+                          <span className="text-muted-foreground block mb-1">รายละเอียด</span>
+                          <p className="font-medium whitespace-pre-wrap break-words">
+                            {appraisalData?.description || "-"}
+                          </p>
+                        </div>
+                      </div>
+                      </div>
+
+                      <div className="flex justify-between">
+                      <span className="text-muted-foreground">วันแจ้งเตือน</span>
+                      <span className="font-medium">
+                        {format(new Date(ticketData.noticeDate), "dd/MM/yyyy")}
                       </span>
                     </div>
                       <div className="flex justify-between">

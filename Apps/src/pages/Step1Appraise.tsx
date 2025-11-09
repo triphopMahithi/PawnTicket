@@ -43,9 +43,9 @@ const steps = [
 ];
 
 const appraisers = [
-  { id: "1", name: "สมชาย ประเมินดี" },
-  { id: "2", name: "สมหญิง เชี่ยวชาญ" },
-  { id: "3", name: "วิชัย มั่นใจ" },
+  { id: "31234", code: "E001", name: "สมชาย ประเมินดี" },
+  { id: "15464", code: "E002", name: "สมหญิง เชี่ยวชาญ" },
+  { id: "31231", code: "E003", name: "วิชัย มั่นใจ" },
 ];
 
 const itemTypes = [
@@ -102,7 +102,6 @@ export default function Step1Appraise() {
       toast.error("กรุณาอัพโหลดหลักฐานอย่างน้อย 1 ไฟล์");
       return;
     }
-
     // Save to session storage for next step
     sessionStorage.setItem(
       "appraisalData",
