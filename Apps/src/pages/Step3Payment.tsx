@@ -49,7 +49,8 @@ export default function Step3Payment() {
   useEffect(() => {
     const appraisal = sessionStorage.getItem("appraisalData");
     const ticket = sessionStorage.getItem("ticketData");
-    
+            
+            {/* Additional ticket details from Step1/Step2 to show when completed */}
     if (!appraisal || !ticket) {
       toast.error("ไม่พบข้อมูลจากขั้นตอนก่อนหน้า");
       navigate("/");
@@ -245,6 +246,10 @@ export default function Step3Payment() {
                       <span className="font-medium">{appraisalData.customer.name}</span>
                     </div>
                     <div className="flex justify-between">
+                      <span className="text-muted-foreground">อัตราดอกเบี้ย</span>
+                      <span className="font-medium">{(ticketData.interestRate)}% / เดือน</span>
+                    </div>
+                    <div className="flex justify-between">
                       <span className="text-muted-foreground">จำนวนเงิน</span>
                       <span className="font-medium">{displayMoney(paymentAmount)} บาท</span>
                     </div>
@@ -252,6 +257,12 @@ export default function Step3Payment() {
                       <span className="text-muted-foreground">วิธีชำระ</span>
                       <span className="font-medium">
                         {paymentMethods.find((m) => m.value === paymentMethod)?.label}
+                      </span>
+                    </div>
+                      <div className="flex justify-between">
+                      <span className="text-muted-foreground">วันครบกำหนด</span>
+                      <span className="font-medium">
+                        {format(new Date(ticketData.dueDate), "dd/MM/yyyy")}
                       </span>
                     </div>
                   </div>

@@ -109,6 +109,10 @@ export default function Step1Appraise() {
       JSON.stringify({
         customer: selectedCustomer,
         appraiser,
+        // store human-readable name as well to make it easier for later steps
+        appraiserName: appraisers.find((a) => a.id === appraiser)?.name || appraiser,
+        // generate an item id for the asset so it can be displayed later
+        itemId: Date.now().toString(),
         itemType,
         description,
         appraisedValue : appraisedValueNumber,
@@ -167,7 +171,7 @@ export default function Step1Appraise() {
                   setAppraiser(emp.id); // หากยังคงเก็บเป็น id สำหรับ sessionStorage
                 }}
                 selectedEmployee={selectedEmployee}
-                allowedPositions={["STAFF","SUPERVISOR","MANAGER"]}
+                allowedPositions={["staff","supervisor","manager"]}
               />
               <div>
                 <Label htmlFor="appraiser">

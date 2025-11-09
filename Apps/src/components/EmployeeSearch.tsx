@@ -20,16 +20,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type Position = "STAFF" | "SUPERVISOR" | "MANAGER";
+type Position = "staff" | "supervisor" | "manager";
 
 const POSITION_LABEL: Record<Position, string> = {
-  STAFF: "พนักงาน",
-  SUPERVISOR: "หัวหน้าชุด",
-  MANAGER: "ผู้จัดการ",
+  staff: "พนักงาน",
+  supervisor: "หัวหน้าชุด",
+  manager: "ผู้จัดการ",
 };
 
 export interface Employee {
-  id: string;           // map -> Staff_ID
+  id: string;           // map -> staff_ID
   first_name: string;
   last_name: string;
   phone_number: string; // digits-only
@@ -38,9 +38,9 @@ export interface Employee {
 
 // ตัวอย่างข้อมูลเริ่มต้น
 const mockEmployees: Employee[] = [
-  { id: "E001", first_name: "สมชาย", last_name: "ประเมินดี", phone_number: "0812345678", position: "STAFF" },
-  { id: "E002", first_name: "สมหญิง", last_name: "เชี่ยวชาญ", phone_number: "0898765432", position: "SUPERVISOR" },
-  { id: "E003", first_name: "วิชัย",   last_name: "มั่นใจ",   phone_number: "0856789012", position: "MANAGER" },
+  { id: "E001", first_name: "สมชาย", last_name: "ประเมินดี", phone_number: "0812345678", position: "staff" },
+  { id: "E002", first_name: "สมหญิง", last_name: "เชี่ยวชาญ", phone_number: "0898765432", position: "supervisor" },
+  { id: "E003", first_name: "วิชัย",   last_name: "มั่นใจ",   phone_number: "0856789012", position: "manager" },
 ];
 
 interface EmployeeSearchProps {
@@ -68,7 +68,7 @@ export function EmployeeSearch({
     first_name: "",
     last_name: "",
     phone_number: "",
-    position: "STAFF",
+    position: "staff",
   });
 
   // ---------- Utils ----------
@@ -158,7 +158,7 @@ export function EmployeeSearch({
     }
 
     const employee: Employee = {
-      id: `E${Date.now()}`, // Temp Staff_ID
+      id: `E${Date.now()}`, // Temp staff_ID
       first_name: fn,
       last_name: ln,
       phone_number: phone, // digits-only
@@ -170,7 +170,7 @@ export function EmployeeSearch({
     setIsOpen(false);
 
     // reset form
-    setNewEmp({ first_name: "", last_name: "", phone_number: "", position: "STAFF" });
+    setNewEmp({ first_name: "", last_name: "", phone_number: "", position: "staff" });
     toast.success("เพิ่มข้อมูลพนักงานสำเร็จ");
   };
 
@@ -265,7 +265,7 @@ export function EmployeeSearch({
                   <SelectValue placeholder="เลือกตำแหน่ง" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(["STAFF", "SUPERVISOR", "MANAGER"] as Position[])
+                  {(["staff", "supervisor", "manager"] as Position[])
                     .filter((p) => !allowedPositions || allowedPositions.includes(p))
                     .map((p) => (
                       <SelectItem key={p} value={p}>
