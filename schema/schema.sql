@@ -64,3 +64,5 @@ sale_date datetime,
 sale_method enum('AUCTION','DIRECT_SALE','ONLINE', 'SCRAP') not null,
 sale_price decimal(12,2) not null,
 foreign key (item_ID) references PawnItem(item_ID));
+
+ALTER DATABASE project CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
