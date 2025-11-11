@@ -22,7 +22,7 @@ item_ID varchar(10) not null primary key,
 item_Type varchar(225) not null,
 description varchar(225) not null,
 appraised_value decimal(12,2) not null,
-item_status enum('GOLD','JEWELRY','ELECTRONICS','WATCH','OTHER') not null );
+item_status enum('IN_STORAGE','RETURNED_TO_CUSTOMER','FORFEITED_READY_FOR_SALE','SOLD','OTHER') not null );
    
 create table PawnTicket (
 ticket_ID varchar(10) not null primary key,
