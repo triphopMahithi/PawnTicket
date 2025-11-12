@@ -1,146 +1,118 @@
-USE project;
-
 -- =========================
 -- 1) Customer (10 rows)
 -- =========================
-INSERT INTO Customer (
-  Customer_ID, first_name, last_name, national_ID,
-  date_of_birth, address, phone_number, kyc_status
-) VALUES
-  ('C001','Thanakrit','Pongschanakul','1103700000001','1999-03-21',
-   '123/4 Moo 5, Nai Mueang Subdistrict, Mueang Nakhon Ratchasima District, Nakhon Ratchasima 30000',
-   891234567,'PENDING'),
-  ('C002','Oranya','Arjahan','1103700000002','2000-07-15',
-   '45/8 Soi Lat Phrao 15, Chom Phon Subdistrict, Chatuchak District, Bangkok 10900',
-   869876543,'PASSED'),
-  ('C003','Sirikan','Chujai','1103700000003','1995-11-02',
-   '88 Sirisuk Village, San Sai Subdistrict, San Sai District, Chiang Mai 50210',
-   881112223,'FAILED'),
-  ('C004','Panisara','Bunruang','1103700000004','1988-01-30',
-   '56/7 Rob Mueang Rd., Nai Mueang Subdistrict, Mueang Khon Kaen District, Khon Kaen 40000',
-   892223334,'REJECTED'),
-  ('C005','Napadol','Sukkasem','1103700000005','1992-05-09',
-   '12/3 Wichit Subdistrict, Mueang Phuket District, Phuket 83000',
-   883334445,'PENDING'),
-  ('C006','Sutthida','Thongmee','1103700000006','1997-09-18',
-   '199/9 Chonview Village, Samet Subdistrict, Mueang Chonburi District, Chonburi 20000',
-   894445556,'PASSED'),
-  ('C007','Kittipong','Jaidee','1103700000007','1985-12-25',
-   '77/1 Bang Rak Phatthana Subdistrict, Bang Bua Thong District, Nonthaburi 11110',
-   885556667,'FAILED'),
-  ('C008','Chonthicha','Wongsuwan','1103700000008','1990-02-14',
-   '34/2 Khlong Nueng Subdistrict, Khlong Luang District, Pathum Thani 12120',
-   896667778,'REJECTED'),
-  ('C009','Pavina','Saetang','1103700000009','1998-08-05',
-   '9/9 Sanambin Rd., Nai Mueang Subdistrict, Mueang Udon Thani District, Udon Thani 41000',
-   887778889,'PENDING'),
-  ('C010','Phuwadol','Intharak','1103700000010','1993-10-11',
-   '101 Moo 2, Tha Chin Subdistrict, Mueang Samut Sakhon District, Samut Sakhon 74000',
-   899889990,'PASSED');
+INSERT INTO Customer
+  (Customer_ID, first_name, last_name, national_ID, date_of_birth, address, phone_number, kyc_status)
+VALUES
+  (1,  'Somchai',   'Jaidee',      '1101700234567', '1988-03-12', '123 Sukhumvit Rd, Khlong Toei, Bangkok 10110, Thailand', 891234567, 'PASSED'),
+  (2,  'Suda',      'Chantarat',   '3102201456789', '1992-07-25', '55 Huay Kaew Rd, Mueang, Chiang Mai 50200, Thailand',     981112233, 'PENDING'),
+  (3,  'Arthit',    'Kittisak',    '1409909876543', '1985-11-03', '88 Mittraphap Rd, Mueang, Khon Kaen 40000, Thailand',     912345678, 'PASSED'),
+  (4,  'Narin',     'Wattanakorn', '3700100123456', '1996-01-20', '77 Sathorn Rd, Bang Rak, Bangkok 10500, Thailand',        955667788, 'FAILED'),
+  (5,  'Ploy',      'Boonmee',     '1209901122334', '1993-09-10', '19 Thepkrasattri Rd, Mueang, Phuket 83000, Thailand',     869900112, 'PASSED'),
+  (6,  'Krit',      'Chaiyawat',   '1999905566778', '1989-04-05', '200 Tiwanon Rd, Pak Kret, Nonthaburi 11120, Thailand',    952233441, 'PASSED'),
+  (7,  'Kanya',     'Ratchada',    '3100603344556', '1995-12-08', '101 Ratchadaphisek Rd, Din Daeng, Bangkok 10400, Thailand',981556677,'PENDING'),
+  (8,  'Prasert',   'Yodchai',     '3301407788990', '1982-02-27', '66 Posri Rd, Mueang, Udon Thani 41000, Thailand',         899112233, 'PASSED'),
+  (9,  'Siriporn',  'Thavorn',     '1501201122448', '1990-06-14', '44 Banphaprakan Rd, Mueang, Chiang Rai 57000, Thailand',  922334455, 'PASSED'),
+  (10, 'Thanakorn', 'Preecha',     '1800206677889', '1987-10-22', '35 Sukhumvit Pattaya, Bang Lamung, Chonburi 20150, Thailand',986543210,'PASSED');
 
 -- =========================
 -- 2) Employee (10 rows)
 -- =========================
-INSERT INTO Employee (
-  Staff_ID, first_name, last_name, phone_number, position
-) VALUES
-  ('S001','Somchai','Pramoendee','0891234567','STAFF'),
-  ('S002','Somying','Chiaochan','0869876543','STAFF'),
-  ('S003','Wichai','Munjai','0812347890','SUPERVISOR'),
-  ('S004','Orathai','Jitngam','0825566778','STAFF'),
-  ('S005','Prasert','Thongthae','0837788990','MANAGER'),
-  ('S006','Chanakan','Jaiyen','0849090909','STAFF'),
-  ('S007','Piya','Srisawat','0855551234','STAFF'),
-  ('S008','Chanida','Homchan','0863337788','SUPERVISOR'),
-  ('S009','Thanwa','Wongdee','0874448899','STAFF'),
-  ('S010','Kamon','Poonsuk','0886669900','STAFF');
+INSERT INTO Employee
+  (Staff_ID, first_name, last_name, phone_number, position)
+VALUES
+  (1,  'Anan',    'Kittipong',   '081-234-5678', 'STAFF'),
+  (2,  'Pimchan', 'Rattanawong', '089-765-4321', 'SUPERVISOR'),
+  (3,  'Viriya',  'Chanprasert', '082-111-2233', 'MANAGER'),
+  (4,  'Patchara','Boonchai',    '086-222-3344', 'STAFF'),
+  (5,  'Thanida', 'Kaeosod',     '083-987-6543', 'STAFF'),
+  (6,  'Nopphon', 'Jirawat',     '081-555-8899', 'SUPERVISOR'),
+  (7,  'Sarun',   'Phattanapon', '085-444-7788', 'STAFF'),
+  (8,  'Kittima', 'Chantana',    '087-321-7654', 'STAFF'),
+  (9,  'Chatchai','Apichart',    '086-909-1122', 'MANAGER'),
+  (10, 'Ratchanee','Suksan',     '089-700-3344', 'STAFF');
 
 -- =========================
 -- 3) PawnItem (10 rows)
+--    (ตั้งให้เป็น SOLD ทั้งหมดเพื่อให้แมทช์กับ Disposition 10 แถว)
 -- =========================
--- item_status: IN_STORAGE / RETURNED_TO_CUSTOMER / FORFEITED_READY_FOR_SALE / SOLD / OTHER
-INSERT INTO PawnItem (
-  item_ID, item_Type, description, appraised_value, item_status
-) VALUES
-  ('I001','GOLD','24K gold necklace, 1 baht weight (Thai gold), chain pattern',29500.00,'IN_STORAGE'),
-  ('I002','GOLD','24K gold bangle, 2 baht weight, “Pikun” pattern',59000.00,'IN_STORAGE'),
-  ('I003','JEWELRY','Single diamond ring, 0.25 carat',18000.00,'IN_STORAGE'),
-  ('I004','ELECTRONICS','Mid-range smartphone',7500.00,'IN_STORAGE'),
-  ('I005','WATCH','Japanese brand wristwatch, steel bracelet',4200.00,'RETURNED_TO_CUSTOMER'),
-  ('I006','OTHER','14-inch work laptop',18500.00,'FORFEITED_READY_FOR_SALE'),
-  ('I007','JEWELRY','Sterling silver necklace with gemstone pendant',3200.00,'SOLD'),
-  ('I008','GOLD','Gold ring, half salung, floral pattern',7400.00,'IN_STORAGE'),
-  ('I009','ELECTRONICS','10-inch tablet with SIM support',9500.00,'IN_STORAGE'),
-  ('I010','OTHER','Used digital camera',6200.00,'OTHER');
+INSERT INTO PawnItem
+  (item_ID, item_Type, description, appraised_value, item_status)
+VALUES
+  (1,  'GOLD',        '22K gold necklace, ~50 grams',                  95000.00, 'SOLD'),
+  (2,  'ELECTRONICS', 'Apple iPhone 14 Pro 256GB (Deep Purple)',       28000.00, 'SOLD'),
+  (3,  'WATCH',       'Seiko Prospex Diver Automatic',                  12000.00, 'SOLD'),
+  (4,  'JEWELRY',     'Diamond ring 0.5 ct, 18K setting',              60000.00, 'SOLD'),
+  (5,  'OTHER',       'Fender Stratocaster electric guitar',            18000.00, 'SOLD'),
+  (6,  'ELECTRONICS', 'MacBook Pro 14-inch (M2, 512GB)',               65000.00, 'SOLD'),
+  (7,  'WATCH',       'Casio G-Shock MTG series',                        9500.00, 'SOLD'),
+  (8,  'JEWELRY',     'Thai gold bracelet 96.5%, ~2 baht',              63000.00, 'SOLD'),
+  (9,  'ELECTRONICS', 'Sony A7C mirrorless camera (body only)',         42000.00, 'SOLD'),
+  (10, 'OTHER',       'Yamaha acoustic guitar FG830',                    7500.00, 'SOLD');
 
 -- =========================
--- 4) PawnTicket (10 rows)
+-- 4) Appraisal (10 rows)
 -- =========================
-INSERT INTO PawnTicket (
-  ticket_ID, Contract_Date, Loan_Amount, interest_rate,
-  due_date_date, notice_date, contract_status,
-  Customer_ID, Staff_ID, item_ID
-) VALUES
-  ('T001','2025-01-05 10:15:00',20000.00,2.50,'2025-02-04 10:15:00','2025-01-28 10:15:00','ACTIVE','C001','S001','I001'),
-  ('T002','2025-01-06 11:30:00',40000.00,2.30,'2025-02-05 11:30:00','2025-01-29 11:30:00','ACTIVE','C002','S002','I002'),
-  ('T003','2025-01-07 14:00:00',12000.00,2.80,'2025-02-06 14:00:00','2025-01-30 14:00:00','ROLLED_OVER','C003','S003','I003'),
-  ('T004','2025-01-08 09:45:00',6000.00,3.00,'2025-02-07 09:45:00','2025-02-01 09:45:00','ACTIVE','C004','S004','I004'),
-  ('T005','2025-01-09 16:20:00',3000.00,3.50,'2025-02-08 16:20:00','2025-02-02 16:20:00','CANCELLED','C005','S005','I005'),
-  ('T006','2025-01-10 13:10:00',15000.00,2.90,'2025-02-09 13:10:00','2025-02-03 13:10:00','EXPIRED','C006','S006','I006'),
-  ('T007','2025-01-11 11:05:00',5000.00,3.20,'2025-02-10 11:05:00','2025-02-04 11:05:00','ACTIVE','C007','S007','I007'),
-  ('T008','2025-01-12 15:40:00',8000.00,3.10,'2025-02-11 15:40:00','2025-02-05 15:40:00','ROLLED_OVER','C008','S008','I008'),
-  ('T009','2025-01-13 10:00:00',9000.00,3.00,'2025-02-12 10:00:00','2025-02-06 10:00:00','ACTIVE','C009','S009','I009'),
-  ('T010','2025-01-14 09:30:00',6500.00,3.20,'2025-02-13 09:30:00','2025-02-07 09:30:00','ACTIVE','C010','S010','I010');
+INSERT INTO Appraisal
+  (appraisal_ID, appraised_value, appraisal_Date, evidence, item_ID, Staff_ID)
+VALUES
+  (1,  95000.00, '2025-10-30 14:10:00', x'89504E470D0A', 1,  2),
+  (2,  28000.00, '2025-10-31 11:45:00', x'255044462D31', 2,  1),
+  (3,  12000.00, '2025-09-20 10:00:00', x'FFD8FFE00010', 3,  3),
+  (4,  60000.00, '2025-11-01 16:30:00', x'424D36000000', 4,  2),
+  (5,  18000.00, '2025-08-18 09:15:00', x'CAFEBABE',     5,  5),
+  (6,  65000.00, '2025-07-09 13:40:00', x'ABCD1234',     6,  6),
+  (7,   9500.00, '2025-06-12 15:25:00', x'01020304',     7,  7),
+  (8,  63000.00, '2025-05-03 11:10:00', x'0A0B0C0D',     8,  8),
+  (9,  42000.00, '2025-09-01 10:30:00', x'DEADBEEF',     9,  9),
+  (10,  7500.00, '2025-10-05 12:00:00', x'FEEDFACE',     10, 10);
 
 -- =========================
--- 5) Appraisal (10 rows)
+-- 5) PawnTicket (10 rows)
+--    หมายเหตุ: ใช้ due_date_date ตามสคีมาปัจจุบัน
 -- =========================
--- evidence: simple BLOB placeholder x'01'
-INSERT INTO Appraisal (
-  appraisal_ID, appraised_value, appraisal_Date, evidence,
-  item_ID, Staff_ID
-) VALUES
-  ('A001',29500.00,'2025-01-05 09:30:00',x'01','I001','S001'),
-  ('A002',60000.00,'2025-01-06 10:45:00',x'01','I002','S002'),
-  ('A003',18000.00,'2025-01-07 13:10:00',x'01','I003','S003'),
-  ('A004',8000.00,'2025-01-08 09:00:00',x'01','I004','S004'),
-  ('A005',4500.00,'2025-01-09 15:30:00',x'01','I005','S005'),
-  ('A006',19000.00,'2025-01-10 12:20:00',x'01','I006','S006'),
-  ('A007',3500.00,'2025-01-11 10:50:00',x'01','I007','S007'),
-  ('A008',7800.00,'2025-01-12 14:30:00',x'01','I008','S008'),
-  ('A009',9800.00,'2025-01-13 09:20:00',x'01','I009','S009'),
-  ('A010',6500.00,'2025-01-14 08:45:00',x'01','I010','S010');
+INSERT INTO PawnTicket
+  (ticket_ID, Contract_Date, Loan_Amount, interest_rate, due_date_date, notice_date, contract_status, Customer_ID, Staff_ID, item_ID)
+VALUES
+  (1,  '2025-11-01 10:00:00', 70000.00, 2.50, '2026-02-01 10:00:00', '2026-01-15 09:00:00', 'ACTIVE',   1,  2,  1),
+  (2,  '2025-08-15 15:20:00', 21000.00, 3.00, '2025-11-15 15:20:00', '2025-11-01 09:00:00', 'ROLLED_OVER', 2, 1,  2),
+  (3,  '2025-07-05 13:00:00',  9000.00, 3.00, '2025-10-05 13:00:00', '2025-09-25 09:00:00', 'EXPIRED',  3,  3,  3),
+  (4,  '2025-05-20 11:40:00', 48000.00, 2.75, '2025-08-20 11:40:00', '2025-08-05 09:00:00', 'EXPIRED',  4,  4,  4),
+  (5,  '2025-04-02 09:00:00', 13000.00, 3.00, '2025-07-02 09:00:00', '2025-06-18 09:00:00', 'EXPIRED',  5,  5,  5),
+  (6,  '2025-06-10 14:15:00', 52000.00, 2.50, '2025-09-10 14:15:00', '2025-08-27 09:00:00', 'EXPIRED',  6,  6,  6),
+  (7,  '2025-09-22 16:45:00',  7000.00, 3.00, '2025-12-22 16:45:00', '2025-12-08 09:00:00', 'ACTIVE',   7,  7,  7),
+  (8,  '2025-10-18 12:05:00', 50000.00, 2.75, '2026-01-18 12:05:00', '2026-01-04 09:00:00', 'ACTIVE',   8,  8,  8),
+  (9,  '2025-03-28 10:20:00', 32000.00, 2.50, '2025-06-28 10:20:00', '2025-06-14 09:00:00', 'EXPIRED',  9,  9,  9),
+  (10, '2025-02-14 13:30:00',  5000.00, 2.50, '2025-05-14 13:30:00', '2025-04-30 09:00:00', 'CANCELLED',10, 10, 10);
 
 -- =========================
 -- 6) Payment (10 rows)
 -- =========================
-INSERT INTO Payment (
-  payment_ID, ticket_ID, payment_date, amount_paid, payment_type
-) VALUES
-  ('P001','T001','2025-01-20 10:00:00',5000.00,'CASH'),
-  ('P002','T002','2025-01-21 11:15:00',8000.00,'TRANSFER'),
-  ('P003','T003','2025-01-22 14:30:00',4000.00,'CARD'),
-  ('P004','T004','2025-01-23 09:30:00',3000.00,'ONLINE'),
-  ('P005','T005','2025-01-24 16:00:00',1500.00,'CASH'),
-  ('P006','T006','2025-01-25 13:00:00',5000.00,'TRANSFER'),
-  ('P007','T007','2025-01-26 11:10:00',2500.00,'CARD'),
-  ('P008','T008','2025-01-27 15:20:00',3000.00,'ONLINE'),
-  ('P009','T009','2025-01-28 10:10:00',3500.00,'CASH'),
-  ('P010','T010','2025-01-29 09:40:00',2000.00,'TRANSFER');
+INSERT INTO Payment
+  (payment_ID, ticket_ID, payment_date, amount_paid, payment_type)
+VALUES
+  (1,  1,  '2025-12-01 09:30:00', 1750.00, 'TRANSFER'),  -- ~2.5% of 70,000
+  (2,  2,  '2025-09-15 14:10:00',  630.00, 'ONLINE'),    -- ~3% of 21,000
+  (3,  3,  '2025-08-05 10:05:00',  270.00, 'CASH'),      -- ~3% of 9,000
+  (4,  4,  '2025-06-20 12:00:00', 1320.00, 'CARD'),      -- ~2.75% of 48,000
+  (5,  5,  '2025-05-02 11:05:00',  390.00, 'TRANSFER'),  -- ~3% of 13,000
+  (6,  6,  '2025-07-10 15:10:00', 1300.00, 'CASH'),      -- ~2.5% of 52,000
+  (7,  7,  '2025-10-22 10:25:00',  210.00, 'ONLINE'),    -- ~3% of 7,000
+  (8,  8,  '2025-11-18 16:40:00', 1375.00, 'CARD'),      -- ~2.75% of 50,000
+  (9,  9,  '2025-04-28 09:20:00',  800.00, 'TRANSFER'),  -- ~2.5% of 32,000
+  (10, 10, '2025-03-14 13:35:00',  125.00, 'CASH');      -- ~2.5% of 5,000
 
 -- =========================
 -- 7) Disposition (10 rows)
+--    (ตั้งให้ขายหลังครบกำหนด/เหมาะสมกับบริบทไทย: direct sale/auction/online/scrap)
 -- =========================
-INSERT INTO Disposition (
-  disposition_ID, item_ID, sale_date, sale_method, sale_price
-) VALUES
-  ('D001','I006','2025-03-10 11:00:00','AUCTION',21000.00),
-  ('D002','I007','2025-02-20 14:30:00','DIRECT_SALE',3800.00),
-  ('D003','I008','2025-03-01 16:00:00','ONLINE',8200.00),
-  ('D004','I010','2025-03-05 13:45:00','SCRAP',3000.00),
-  ('D005','I002','2025-04-01 15:10:00','AUCTION',63000.00),
-  ('D006','I003','2025-03-18 12:20:00','DIRECT_SALE',19000.00),
-  ('D007','I004','2025-03-22 17:30:00','ONLINE',7800.00),
-  ('D008','I005','2025-02-28 10:50:00','DIRECT_SALE',4800.00),
-  ('D009','I009','2025-04-02 11:15:00','AUCTION',10500.00),
-  ('D010','I001','2025-04-10 14:05:00','ONLINE',31000.00);
+INSERT INTO Disposition
+  (disposition_ID, item_ID, sale_date, sale_method, sale_price)
+VALUES
+  (1,  1,  '2026-03-01 11:00:00', 'DIRECT_SALE', 98000.00),
+  (2,  2,  '2025-12-01 10:30:00', 'ONLINE',      24500.00),
+  (3,  3,  '2025-10-30 14:20:00', 'DIRECT_SALE', 13000.00),
+  (4,  4,  '2025-09-05 15:45:00', 'AUCTION',     61000.00),
+  (5,  5,  '2025-08-10 13:10:00', 'DIRECT_SALE', 17000.00),
+  (6,  6,  '2025-10-05 16:00:00', 'AUCTION',     64000.00),
+  (7,  7,  '2025-12-28 12:10:00', 'ONLINE',      10000

@@ -1,68 +1,92 @@
-create schema project;
-use project;
-create table Customer (
- Customer_ID varchar(10) not null primary key,
- first_name varchar(225) not null,
- last_name varchar(225) not null,
- national_ID char(13) not null,
- date_of_birth date,
- address varchar(500) not null,
- phone_number int(10) not null,
- kyc_status enum('PENDING','PASSED','FAILED','REJECTED') not null);
- 
- create table Employee (
- Staff_ID varchar(10) not null primary key,
- first_name varchar(225) not null,
- last_name varchar(225) not null,
- phone_number varchar(225) not null,
- position varchar(99) not null );
- 
- create table PawnItem (
-item_ID varchar(10) not null primary key,
-item_Type varchar(225) not null,
-description varchar(225) not null,
-appraised_value decimal(12,2) not null,
-item_status enum('IN_STORAGE','RETURNED_TO_CUSTOMER','FORFEITED_READY_FOR_SALE','SOLD','OTHER') not null );
-   
-create table PawnTicket (
-ticket_ID varchar(10) not null primary key,
-Contract_Date datetime not null,
-Loan_Amount decimal(12,2) not null,
-interest_rate decimal(5,2) not null,
-due_date_date datetime,
-notice_date datetime,
-contract_status enum('ACTIVE', 'ROLLED_OVER','CANCELLED','EXPIRED') not null,
-Customer_ID varchar(10) not null,
-Staff_ID varchar(10) not null,
-item_ID varchar(10) not null,
-foreign key (Customer_ID) references Customer(Customer_ID),
-foreign key (Staff_ID) references Employee(Staff_ID),
-foreign key (item_ID) references PawnItem(item_ID));
+-- สร้าง DB + ตั้งค่า charset/collation
+CREATE DATABASE IF NOT EXISTS project
+  DEFAULT CHARACTER SET utf8mb4
+  DEFAULT COLLATE utf8mb4_general_ci;
 
-create table Appraisal (
-appraisal_ID varchar(10) not null primary key,
-appraised_value decimal(12,2) not null,
-appraisal_Date datetime,
-evidence blob not null,
-item_ID varchar(10) not null,
-Staff_ID varchar(10) not null,
-foreign key (item_ID) references PawnItem(item_ID),
-foreign key (Staff_ID) references Employee(Staff_ID));
+USE project;
 
-create table Payment (
-payment_ID varchar(10) not null primary key,
-ticket_ID varchar(10) not null,
-payment_date datetime,
-amount_paid decimal(12,2) not null,
-payment_type enum('CASH','TRANSFER','CARD','ONLINE') not null,
-foreign key (ticket_ID) references PawnTicket(ticket_ID));
+-- เคลียร์ตารางเดิมหากมี (ลำดับย้อน FK)
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS Disposition, Payment, Appraisal, PawnTicket, PawnItem, Employee, Customer;
+SET FOREIGN_KEY_CHECKS = 1;
 
-create table Disposition (
-disposition_ID varchar(10) not null primary key,
-item_ID varchar(10) not null,
-sale_date datetime,
-sale_method enum('AUCTION','DIRECT_SALE','ONLINE', 'SCRAP') not null,
-sale_price decimal(12,2) not null,
-foreign key (item_ID) references PawnItem(item_ID));
+-- ===== Tables =====
 
-ALTER DATABASE project CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+CREATE TABLE Customer (
+  Customer_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(225) NOT NULL,
+  last_name VARCHAR(225) NOT NULL,
+  national_ID CHAR(13) NOT NULL,
+  date_of_birth DATE,
+  address VARCHAR(500) NOT NULL,
+  phone_number INT(10) NOT NULL,
+  kyc_status ENUM('PENDING','PASSED','FAILED','REJECTED') NOT NULL,
+  PRIMARY KEY (Customer_ID)
+) ENGINE=InnoDB;
+
+CREATE TABLE Employee (
+  Staff_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(225) NOT NULL,
+  last_name VARCHAR(225) NOT NULL,
+  phone_number VARCHAR(225) NOT NULL,
+  position VARCHAR(99) NOT NULL,
+  PRIMARY KEY (Staff_ID)
+) ENGINE=InnoDB;
+
+CREATE TABLE PawnItem (
+  item_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  item_Type VARCHAR(225) NOT NULL,
+  description VARCHAR(225) NOT NULL,
+  appraised_value DECIMAL(12,2) NOT NULL,
+  item_status ENUM('IN_STORAGE','RETURNED_TO_CUSTOMER','FORFEITED_READY_FOR_SALE','SOLD','OTHER') NOT NULL,
+  PRIMARY KEY (item_ID)
+) ENGINE=InnoDB;
+
+CREATE TABLE PawnTicket (
+  ticket_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  Contract_Date DATETIME NOT NULL,
+  Loan_Amount DECIMAL(12,2) NOT NULL,
+  interest_rate DECIMAL(5,2) NOT NULL,
+  due_date_date DATETIME,
+  notice_date DATETIME,
+  contract_status ENUM('ACTIVE','ROLLED_OVER','CANCELLED','EXPIRED') NOT NULL,
+  Customer_ID INT UNSIGNED NOT NULL,
+  Staff_ID INT UNSIGNED NOT NULL,
+  item_ID INT UNSIGNED NOT NULL,
+  PRIMARY KEY (ticket_ID),
+  CONSTRAINT fk_PT_customer FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID),
+  CONSTRAINT fk_PT_staff    FOREIGN KEY (Staff_ID)    REFERENCES Employee(Staff_ID),
+  CONSTRAINT fk_PT_item     FOREIGN KEY (item_ID)     REFERENCES PawnItem(item_ID)
+) ENGINE=InnoDB;
+
+CREATE TABLE Appraisal (
+  appraisal_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  appraised_value DECIMAL(12,2) NOT NULL,
+  appraisal_Date DATETIME,
+  evidence BLOB NOT NULL,
+  item_ID INT UNSIGNED NOT NULL,
+  Staff_ID INT UNSIGNED NOT NULL,
+  PRIMARY KEY (appraisal_ID),
+  CONSTRAINT fk_App_item  FOREIGN KEY (item_ID) REFERENCES PawnItem(item_ID),
+  CONSTRAINT fk_App_staff FOREIGN KEY (Staff_ID) REFERENCES Employee(Staff_ID)
+) ENGINE=InnoDB;
+
+CREATE TABLE Payment (
+  payment_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  ticket_ID INT UNSIGNED NOT NULL,
+  payment_date DATETIME,
+  amount_paid DECIMAL(12,2) NOT NULL,
+  payment_type ENUM('CASH','TRANSFER','CARD','ONLINE') NOT NULL,
+  PRIMARY KEY (payment_ID),
+  CONSTRAINT fk_Pay_ticket FOREIGN KEY (ticket_ID) REFERENCES PawnTicket(ticket_ID)
+) ENGINE=InnoDB;
+
+CREATE TABLE Disposition (
+  disposition_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  item_ID INT UNSIGNED NOT NULL,
+  sale_date DATETIME,
+  sale_method ENUM('AUCTION','DIRECT_SALE','ONLINE','SCRAP') NOT NULL,
+  sale_price DECIMAL(12,2) NOT NULL,
+  PRIMARY KEY (disposition_ID),
+  CONSTRAINT fk_Disp_item FOREIGN KEY (item_ID) REFERENCES PawnItem(item_ID)
+) ENGINE=InnoDB;
