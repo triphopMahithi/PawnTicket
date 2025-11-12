@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type Position = "staff" | "supervisor" | "manager";
+export type Position = "staff" | "supervisor" | "manager";
 
 const POSITION_LABEL: Record<Position, string> = {
   staff: "พนักงาน",
@@ -29,24 +29,25 @@ const POSITION_LABEL: Record<Position, string> = {
 };
 
 export interface Employee {
-  id: string;           // map -> staff_ID
+  id: string;            // Staff_ID
+  name: string;          // full name (first + last)
   first_name: string;
   last_name: string;
-  phone_number: string; // digits-only
+  phone_number: string;  // digits-only
   position: Position;
 }
 
-// ตัวอย่างข้อมูลเริ่มต้น
+// ตัวอย่างข้อมูลเริ่มต้น (mock) — ใส่ name ให้ครบเพื่อให้ shape เท่ากัน
 const mockEmployees: Employee[] = [
-  { id: "E001", first_name: "สมชาย", last_name: "ประเมินดี", phone_number: "0812345678", position: "staff" },
-  { id: "E002", first_name: "สมหญิง", last_name: "เชี่ยวชาญ", phone_number: "0898765432", position: "supervisor" },
-  { id: "E003", first_name: "วิชัย",   last_name: "มั่นใจ",   phone_number: "0856789012", position: "manager" },
+  { id: "E001", first_name: "สมชาย", last_name: "ประเมินดี", name: "สมชาย ประเมินดี", phone_number: "0812345678", position: "staff" },
+  { id: "E002", first_name: "สมหญิง", last_name: "เชี่ยวชาญ", name: "สมหญิง เชี่ยวชาญ", phone_number: "0898765432", position: "supervisor" },
+  { id: "E003", first_name: "วิชัย",   last_name: "มั่นใจ",   name: "วิชัย มั่นใจ",     phone_number: "0856789012", position: "manager" },
 ];
 
 interface EmployeeSearchProps {
-  onSelect: (employee: Employee) => void;
+  onSelect: (employee: Employee) => void;        
   selectedEmployee: Employee | null;
-  allowedPositions?: Position[]; // ถ้าส่งมา จะฟิลเตอร์เฉพาะตำแหน่งที่อนุญาต
+  allowedPositions?: Position[];                  
 }
 
 export function EmployeeSearch({
@@ -54,11 +55,21 @@ export function EmployeeSearch({
   selectedEmployee,
   allowedPositions,
 }: EmployeeSearchProps) {
-  const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
+  // local list (mock) เผื่อค้นหาแบบออฟไลน์ + ใช้ตอนสร้างใหม่
+  const [employees, setEmployees] = useState<Employee[]>(
+    mockEmployees.map(e => ({ ...e, name: e.name ?? `${e.first_name} ${e.last_name}`.trim() }))
+  );
 
-  // ฟอร์มสร้างใหม่
+  // server search
+  const [serverEmployees, setServerEmployees] = useState<Employee[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const isOpenRef = useRef<boolean>(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // form สร้างใหม่
+  const [isOpen, setIsOpen] = useState(false);
   const [newEmp, setNewEmp] = useState<{
     first_name: string;
     last_name: string;
@@ -71,13 +82,13 @@ export function EmployeeSearch({
     position: "staff",
   });
 
-  // ---------- Utils ----------
+  // ---------- utils ----------
   const onlyDigits = (s: string) => s.replace(/\D/g, "");
 
   const formatPhone = (phone: string) => {
     const d = onlyDigits(phone);
     if (d.startsWith("66")) {
-      const body = d.slice(2); // 9 digits
+      const body = d.slice(2);
       const p1 = body.slice(0, 1);
       const p2 = body.slice(1, 5);
       const p3 = body.slice(5, 9);
@@ -103,18 +114,73 @@ export function EmployeeSearch({
     return null;
   };
 
-  const fullName = (e: Employee) => `${e.first_name} ${e.last_name}`.trim();
+  const fullName = (e: Employee) => (e.name?.trim() || `${e.first_name} ${e.last_name}`.trim());
   const matchAllowed = (e: Employee) =>
     !allowedPositions || allowedPositions.includes(e.position);
 
-  // ---------- Search ----------
+  // ---------- server search with debounce ----------
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) {
+      setServerEmployees([]);
+      setLoading(false);
+      setErrorMsg(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setLoading(true);
+        setErrorMsg(null);
+
+        if (abortRef.current) abortRef.current.abort();
+        const controller = new AbortController();
+        abortRef.current = controller;
+
+        const base = (import.meta as any).env?.VITE_API_ORIGIN || "http://localhost:3001";
+        const params = new URLSearchParams({ q, limit: "20" });
+        const resp = await fetch(`${base}/api/employees?${params}`, { signal: controller.signal });
+        if (!resp.ok) throw new Error("fetch_failed");
+
+        const data = await resp.json();
+        const items: Employee[] = (data.items || []).map((c: any) => {
+          const posRaw = String(c.position ?? "staff").toLowerCase();
+          const position: Position =
+            posRaw === "supervisor" ? "supervisor" :
+            posRaw === "manager"   ? "manager"   : "staff";
+
+          const first = String(c.first_name ?? "");
+          const last  = String(c.last_name  ?? "");
+          const name  = String(c.name ?? `${first} ${last}`.trim()); 
+
+          return {
+            id: String(c.id),
+            name,                   
+            first_name: first,
+            last_name: last,
+            phone_number: String(c.phone_number ?? c.phone ?? ""),
+            position,
+          };
+        });
+
+        const filtered = allowedPositions ? items.filter(e => allowedPositions.includes(e.position)) : items;
+        setServerEmployees(filtered);
+      } catch (e: any) {
+        if (e.name !== "AbortError") setErrorMsg("ค้นหาจากฐานข้อมูลไม่สำเร็จ");
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, allowedPositions]);
+
+  // ---------- local filter (optional helper) ----------
   const filteredEmployees = employees.filter((e) => {
     if (!matchAllowed(e)) return false;
-
     const q = searchQuery.trim().toLowerCase();
     if (!q) return false;
     const qDigits = onlyDigits(searchQuery);
-
     return (
       e.first_name.toLowerCase().includes(q) ||
       e.last_name.toLowerCase().includes(q) ||
@@ -124,7 +190,7 @@ export function EmployeeSearch({
     );
   });
 
-  // ---------- Create ----------
+  // ---------- create ----------
   const handleCreate = () => {
     const fn = newEmp.first_name.trim();
     const ln = newEmp.last_name.trim();
@@ -145,11 +211,10 @@ export function EmployeeSearch({
       return;
     }
 
-    // กันซ้ำด้วยเบอร์ (E.164) หรือชื่อ-นามสกุล
     const e164 = toE164(phone);
     const dup = employees.find(
       (e) =>
-        (e164 && toE164(e.phone_number) === e164) || // guard ป้องกัน null
+        (e164 && toE164(e.phone_number) === e164) ||
         (e.first_name.trim() === fn && e.last_name.trim() === ln)
     );
     if (dup) {
@@ -158,18 +223,17 @@ export function EmployeeSearch({
     }
 
     const employee: Employee = {
-      id: `E${Date.now()}`, // Temp staff_ID
+      id: `E${Date.now()}`,         // temp staff_ID
       first_name: fn,
       last_name: ln,
-      phone_number: phone, // digits-only
+      name: `${fn} ${ln}`.trim(),   
+      phone_number: phone,
       position: pos,
     };
 
     setEmployees((prev) => [employee, ...prev]);
-    onSelect(employee);
+    onSelect(employee);            
     setIsOpen(false);
-
-    // reset form
     setNewEmp({ first_name: "", last_name: "", phone_number: "", position: "staff" });
     toast.success("เพิ่มข้อมูลพนักงานสำเร็จ");
   };
@@ -196,109 +260,108 @@ export function EmployeeSearch({
             </Button>
           </DialogTrigger>
 
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>เพิ่มข้อมูลพนักงาน</DialogTitle>
-            <DialogDescription>กรอกข้อมูลให้ครบถ้วน</DialogDescription>
-          </DialogHeader>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>เพิ่มข้อมูลพนักงาน</DialogTitle>
+              <DialogDescription>กรอกข้อมูลให้ครบถ้วน</DialogDescription>
+            </DialogHeader>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-            <div>
-              <Label htmlFor="first_name">
-                ชื่อ <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="first_name"
-                placeholder="สมชาย"
-                value={newEmp.first_name}
-                onChange={(e) =>
-                  setNewEmp({ ...newEmp, first_name: e.target.value })
-                }
-              />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+              <div>
+                <Label htmlFor="first_name">
+                  ชื่อ <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="first_name"
+                  placeholder="สมชาย"
+                  value={newEmp.first_name}
+                  onChange={(e) => setNewEmp({ ...newEmp, first_name: e.target.value })}
+                />
+              </div>
 
-            <div>
-              <Label htmlFor="last_name">
-                นามสกุล <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="last_name"
-                placeholder="ประเมินดี"
-                value={newEmp.last_name}
-                onChange={(e) =>
-                  setNewEmp({ ...newEmp, last_name: e.target.value })
-                }
-              />
-            </div>
+              <div>
+                <Label htmlFor="last_name">
+                  นามสกุล <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="last_name"
+                  placeholder="ประเมินดี"
+                  value={newEmp.last_name}
+                  onChange={(e) => setNewEmp({ ...newEmp, last_name: e.target.value })}
+                />
+              </div>
 
-            <div>
-              <Label htmlFor="phone">
-                เบอร์โทรศัพท์ <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="phone"
-                inputMode="tel"
-                placeholder="081-234-5678 หรือ +66 8 1234 5678"
-                value={formatPhone(newEmp.phone_number)}
-                onChange={(e) => {
-                  const d = onlyDigits(e.target.value);
-                  const limited = d.startsWith("66") ? d.slice(0, 11) : d.slice(0, 10);
-                  setNewEmp({ ...newEmp, phone_number: limited });
-                }}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                10 หลัก (ขึ้นต้น 06/08/09) หรือ +66 ตามมาตรฐาน
-              </p>
-            </div>
+              <div>
+                <Label htmlFor="phone">
+                  เบอร์โทรศัพท์ <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="phone"
+                  inputMode="tel"
+                  placeholder="081-234-5678 หรือ +66 8 1234 5678"
+                  value={formatPhone(newEmp.phone_number)}
+                  onChange={(e) => {
+                    const d = onlyDigits(e.target.value);
+                    const limited = d.startsWith("66") ? d.slice(0, 11) : d.slice(0, 10);
+                    setNewEmp({ ...newEmp, phone_number: limited });
+                  }}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  10 หลัก (ขึ้นต้น 06/08/09) หรือ +66 ตามมาตรฐาน
+                </p>
+              </div>
 
-            <div>
-              <Label htmlFor="position">
-                ตำแหน่ง <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={newEmp.position}
-                onValueChange={(v) =>
-                  setNewEmp({ ...newEmp, position: v as Position })
-                }
-              >
-                <SelectTrigger id="position">
-                  <SelectValue placeholder="เลือกตำแหน่ง" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(["staff", "supervisor", "manager"] as Position[])
-                    .filter((p) => !allowedPositions || allowedPositions.includes(p))
-                    .map((p) => (
-                      <SelectItem key={p} value={p}>
-                        {POSITION_LABEL[p]} ({p})
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div>
+                <Label htmlFor="position">
+                  ตำแหน่ง <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={newEmp.position}
+                  onValueChange={(v) => setNewEmp({ ...newEmp, position: v as Position })}
+                >
+                  <SelectTrigger id="position">
+                    <SelectValue placeholder="เลือกตำแหน่ง" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(["staff", "supervisor", "manager"] as Position[])
+                      .filter((p) => !allowedPositions || allowedPositions.includes(p))
+                      .map((p) => (
+                        <SelectItem key={p} value={p}>
+                          {POSITION_LABEL[p]} ({p})
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="md:col-span-2">
-              <Button onClick={handleCreate} className="w-full">
-                บันทึก
-              </Button>
+              <div className="md:col-span-2">
+                <Button onClick={handleCreate} className="w-full">บันทึก</Button>
+              </div>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* Search Result */}
+      {/* Server search result */}
       {searchQuery && (
         <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
-          {filteredEmployees.length === 0 ? (
+          {loading ? (
+            <div className="p-4 text-center text-muted-foreground">กำลังค้นหา...</div>
+          ) : errorMsg ? (
+            <div className="p-4 text-center text-destructive">{errorMsg}</div>
+          ) : serverEmployees.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground">ไม่พบข้อมูลพนักงาน</div>
           ) : (
-            filteredEmployees.map((e) => (
+            serverEmployees.map((e) => (
               <button
                 key={e.id}
                 onClick={() => {
-                  onSelect(e);
+                  const normalized: Employee = e.name
+                    ? e
+                    : { ...e, name: `${e.first_name} ${e.last_name}`.trim() };
+                  onSelect(normalized); 
                   setSearchQuery("");
-                  toast.success(`เลือกพนักงาน: ${fullName(e)}`);
+                  toast.success(`เลือกพนักงาน: ${fullName(normalized)}`);
                 }}
                 className="w-full p-3 text-left hover:bg-muted transition-colors"
               >
@@ -316,7 +379,7 @@ export function EmployeeSearch({
       {selectedEmployee && (
         <div className="p-4 bg-card rounded-lg border space-y-1">
           <p className="text-sm text-muted-foreground">พนักงานที่เลือก</p>
-          <p className="font-semibold">{fullName(selectedEmployee)}</p>
+          <p className="font-semibold">{selectedEmployee.name}</p>
           <p className="text-sm text-muted-foreground">
             {formatPhone(selectedEmployee.phone_number)}
           </p>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useRef, useEffect } from "react";
 import { Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ interface Address {
   province: string;
   postalCode: string; // 5 digits
   note?: string;
+  raw?: string;
 }
 
 interface Customer {
@@ -32,23 +34,15 @@ interface Customer {
   address?: Address;
 }
 
-const mockCustomers: Customer[] = [
-  { id: "1", name: "สมชาย ใจดี",   nationalId: "1234567890123", phone: "0812345678" },
-  { id: "2", name: "สมหญิง รักสุข", nationalId: "9876543210987", phone: "0898765432" },
-  { id: "3", name: "วิชัย เจริญสุข", nationalId: "5551234567890", phone: "0856789012" },
-];
-
 interface CustomerSearchProps {
   onSelect: (customer: Customer) => void;
   selectedCustomer: Customer | null;
 }
 
 export function CustomerSearch({ onSelect, selectedCustomer }: CustomerSearchProps) {
-  const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
-
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-
   const [newCustomer, setNewCustomer] = useState<{
     name: string;
     nationalId: string; // digits only
@@ -68,6 +62,67 @@ export function CustomerSearch({ onSelect, selectedCustomer }: CustomerSearchPro
       note: "",
     },
   });
+// === Server-side search ===
+const [serverCustomers, setServerCustomers] = useState<Customer[]>([]);
+const [loading, setLoading] = useState(false);
+const [errorMsg, setErrorMsg] = useState<string | null>(null);
+const abortRef = useRef<AbortController | null>(null);
+
+useEffect(() => {
+  const q = searchQuery.trim();
+  if (!q) {
+    setServerCustomers([]);
+    setLoading(false);
+    setErrorMsg(null);
+    return;
+  }
+
+  const timer = setTimeout(async () => {
+    try {
+      setLoading(true);
+      setErrorMsg(null);
+
+      if (abortRef.current) abortRef.current.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      const params = new URLSearchParams({ q, limit: "20" });
+      const resp = await fetch(`http://localhost:3001/api/customers?${params}`, {
+        signal: controller.signal,
+      });
+      if (!resp.ok) throw new Error("fetch_failed");
+
+      const data = await resp.json();
+      const items: Customer[] = (data.items || []).map((c: any) => ({
+        id: String(c.id),
+        name: String(c.name ?? ""),
+        nationalId: String(c.nationalId ?? ""),
+        phone: String(c.phone ?? ""),
+        dateOfBirthISO: c.dateOfBirthISO, 
+        address: c.address
+          ? {
+              houseNo: "",
+              street: "",
+              tambon: "",
+              amphoe: "",
+              province: "",
+              postalCode: "",
+              note: "",
+              raw: String(c.address.raw ?? ""),
+            }
+          : undefined,
+      }));
+
+      setServerCustomers(items);
+    } catch (e: any) {
+      if (e.name !== "AbortError") setErrorMsg("ค้นหาจากฐานข้อมูลไม่สำเร็จ");
+    } finally {
+      setLoading(false);
+    }
+  }, 300); // debounce 300ms
+
+  return () => clearTimeout(timer);
+}, [searchQuery]);
 
   // วันเกิดแบบ native input date
   const [dobISO, setDobISO] = useState<string>("");
@@ -132,17 +187,19 @@ export function CustomerSearch({ onSelect, selectedCustomer }: CustomerSearchPro
   const isValidPostalCode = (pc: string) => /^\d{5}$/.test(onlyDigits(pc));
 
   const formatAddressLine = (a?: Address) => {
-    if (!a) return "-";
-    const parts = [
-      a.houseNo && `เลขที่ ${a.houseNo}`,
-      a.street && `ถ.${a.street}`,
-      a.tambon && `ต.${a.tambon}`,
-      a.amphoe && `อ.${a.amphoe}`,
-      a.province && `จ.${a.province}`,
-      a.postalCode,
-    ].filter(Boolean);
-    return parts.length ? parts.join(" ") : "-";
-  };
+  if (!a) return "-";
+  if (a.raw && a.raw.trim()) return a.raw.trim(); // << ใช้ raw ถ้ามี
+  const parts = [
+    a.houseNo && `เลขที่ ${a.houseNo}`,
+    a.street && `ถ.${a.street}`,
+    a.tambon && `ต.${a.tambon}`,
+    a.amphoe && `อ.${a.amphoe}`,
+    a.province && `จ.${a.province}`,
+    a.postalCode,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" ") : "-";
+};
+
 
   // ---------- Search ----------
   const filteredCustomers = customers.filter((c) => {
@@ -492,34 +549,39 @@ export function CustomerSearch({ onSelect, selectedCustomer }: CustomerSearchPro
 
       {/* Search Result */}
       {searchQuery && (
-        <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
-          {filteredCustomers.length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground">ไม่พบข้อมูลลูกค้า</div>
-          ) : (
-            filteredCustomers.map((customer) => (
-              <button
-                key={customer.id}
-                onClick={() => {
-                  onSelect(customer);
-                  setSearchQuery("");
-                  toast.success(`เลือกลูกค้า: ${customer.name}`);
-                }}
-                className="w-full p-3 text-left hover:bg-muted transition-colors"
-              >
-                <p className="font-medium">{customer.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {formatNationalId(customer.nationalId)} | {formatPhone(customer.phone)}
-                </p>
-                {customer.address && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {formatAddressLine(customer.address)}
-                  </p>
-                )}
-              </button>
-            ))
+  <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
+    {loading ? (
+      <div className="p-4 text-center text-muted-foreground">กำลังค้นหา...</div>
+    ) : errorMsg ? (
+      <div className="p-4 text-center text-destructive">{errorMsg}</div>
+    ) : serverCustomers.length === 0 ? (
+      <div className="p-4 text-center text-muted-foreground">ไม่พบข้อมูลลูกค้า</div>
+    ) : (
+      serverCustomers.map((customer) => (
+        <button
+          key={customer.id}
+          onClick={() => {
+            onSelect(customer);
+            setSearchQuery("");
+            toast.success(`เลือกลูกค้า: ${customer.name}`);
+          }}
+          className="w-full p-3 text-left hover:bg-muted transition-colors"
+        >
+          <p className="font-medium">{customer.name}</p>
+          <p className="text-sm text-muted-foreground">
+            {formatNationalId(customer.nationalId)} | {formatPhone(customer.phone)}
+          </p>
+          {customer.address && (
+            <p className="text-xs text-muted-foreground mt-1">
+              {formatAddressLine(customer.address)}
+            </p>
           )}
-        </div>
-      )}
+        </button>
+      ))
+    )}
+  </div>
+)}
+
 
       {/* Selected */}
       {selectedCustomer && (
