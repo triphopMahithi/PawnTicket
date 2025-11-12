@@ -4,16 +4,16 @@
 INSERT INTO Customer
   (Customer_ID, first_name, last_name, national_ID, date_of_birth, address, phone_number, kyc_status)
 VALUES
-  (1,  'Somchai',   'Jaidee',      '1101700234567', '1988-03-12', '123 Sukhumvit Rd, Khlong Toei, Bangkok 10110, Thailand', 891234567, 'PASSED'),
-  (2,  'Suda',      'Chantarat',   '3102201456789', '1992-07-25', '55 Huay Kaew Rd, Mueang, Chiang Mai 50200, Thailand',     981112233, 'PENDING'),
-  (3,  'Arthit',    'Kittisak',    '1409909876543', '1985-11-03', '88 Mittraphap Rd, Mueang, Khon Kaen 40000, Thailand',     912345678, 'PASSED'),
-  (4,  'Narin',     'Wattanakorn', '3700100123456', '1996-01-20', '77 Sathorn Rd, Bang Rak, Bangkok 10500, Thailand',        955667788, 'FAILED'),
-  (5,  'Ploy',      'Boonmee',     '1209901122334', '1993-09-10', '19 Thepkrasattri Rd, Mueang, Phuket 83000, Thailand',     869900112, 'PASSED'),
-  (6,  'Krit',      'Chaiyawat',   '1999905566778', '1989-04-05', '200 Tiwanon Rd, Pak Kret, Nonthaburi 11120, Thailand',    952233441, 'PASSED'),
-  (7,  'Kanya',     'Ratchada',    '3100603344556', '1995-12-08', '101 Ratchadaphisek Rd, Din Daeng, Bangkok 10400, Thailand',981556677,'PENDING'),
-  (8,  'Prasert',   'Yodchai',     '3301407788990', '1982-02-27', '66 Posri Rd, Mueang, Udon Thani 41000, Thailand',         899112233, 'PASSED'),
-  (9,  'Siriporn',  'Thavorn',     '1501201122448', '1990-06-14', '44 Banphaprakan Rd, Mueang, Chiang Rai 57000, Thailand',  922334455, 'PASSED'),
-  (10, 'Thanakorn', 'Preecha',     '1800206677889', '1987-10-22', '35 Sukhumvit Pattaya, Bang Lamung, Chonburi 20150, Thailand',986543210,'PASSED');
+  (1,  'Somchai',   'Jaidee',      '1101700234567', '1988-03-12', '123 Sukhumvit Rd, Khlong Toei, Bangkok 10110, Thailand', '089-123-4567', 'PASSED'),
+  (2,  'Suda',      'Chantarat',   '3102201456789', '1992-07-25', '55 Huay Kaew Rd, Mueang, Chiang Mai 50200, Thailand',     '098-111-2233', 'PENDING'),
+  (3,  'Arthit',    'Kittisak',    '1409909876543', '1985-11-03', '88 Mittraphap Rd, Mueang, Khon Kaen 40000, Thailand',     '091-234-5678', 'PASSED'),
+  (4,  'Narin',     'Wattanakorn', '3700100123456', '1996-01-20', '77 Sathorn Rd, Bang Rak, Bangkok 10500, Thailand',        '095-566-7788', 'FAILED'),
+  (5,  'Ploy',      'Boonmee',     '1209901122334', '1993-09-10', '19 Thepkrasattri Rd, Mueang, Phuket 83000, Thailand',     '086-990-0112', 'PASSED'),
+  (6,  'Krit',      'Chaiyawat',   '1999905566778', '1989-04-05', '200 Tiwanon Rd, Pak Kret, Nonthaburi 11120, Thailand',    '095-223-3441', 'PASSED'),
+  (7,  'Kanya',     'Ratchada',    '3100603344556', '1995-12-08', '101 Ratchadaphisek Rd, Din Daeng, Bangkok 10400, Thailand','098-155-6677','PENDING'),
+  (8,  'Prasert',   'Yodchai',     '3301407788990', '1982-02-27', '66 Posri Rd, Mueang, Udon Thani 41000, Thailand',         '089-9112-233', 'PASSED'),
+  (9,  'Siriporn',  'Thavorn',     '1501201122448', '1990-06-14', '44 Banphaprakan Rd, Mueang, Chiang Rai 57000, Thailand',  '092-2334-455', 'PASSED'),
+  (10, 'Thanakorn', 'Preecha',     '1800206677889', '1987-10-22', '35 Sukhumvit Pattaya, Bang Lamung, Chonburi 20150, Thailand','098-654-3210','PASSED');
 
 -- =========================
 -- 2) Employee (10 rows)
@@ -115,4 +115,7 @@ VALUES
   (4,  4,  '2025-09-05 15:45:00', 'AUCTION',     61000.00),
   (5,  5,  '2025-08-10 13:10:00', 'DIRECT_SALE', 17000.00),
   (6,  6,  '2025-10-05 16:00:00', 'AUCTION',     64000.00),
-  (7,  7,  '2025-12-28 12:10:00', 'ONLINE',      10000
+  (7,  7,  '2025-12-28 12:10:00', 'ONLINE',      10000.00),
+  (8,  8,  '2026-02-05 10:05:00', 'DIRECT_SALE', 65000.00),
+  (9,  9,  '2025-11-20 09:50:00', 'ONLINE',      41000.00),
+  (10, 10, '2025-06-20 10:00:00', 'SCRAP',        6000.00);

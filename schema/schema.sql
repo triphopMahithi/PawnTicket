@@ -19,7 +19,7 @@ CREATE TABLE Customer (
   national_ID CHAR(13) NOT NULL,
   date_of_birth DATE,
   address VARCHAR(500) NOT NULL,
-  phone_number INT(10) NOT NULL,
+  phone_number VARCHAR(20) NOT NULL,
   kyc_status ENUM('PENDING','PASSED','FAILED','REJECTED') NOT NULL,
   PRIMARY KEY (Customer_ID)
 ) ENGINE=InnoDB;
@@ -28,7 +28,7 @@ CREATE TABLE Employee (
   Staff_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
   first_name VARCHAR(225) NOT NULL,
   last_name VARCHAR(225) NOT NULL,
-  phone_number VARCHAR(225) NOT NULL,
+  phone_number VARCHAR(20) NOT NULL,
   position VARCHAR(99) NOT NULL,
   PRIMARY KEY (Staff_ID)
 ) ENGINE=InnoDB;
