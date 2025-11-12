@@ -68,12 +68,15 @@ export default function Step1Appraise() {
   const [files, setFiles] = useState<File[]>([]);
   const appraisedValueNumber = Number((appraisedValue || "").replace(/[^\d.-]/g, "")) || 0;
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [otherItemType, setOtherItemType] = useState("");
 
   const handleSaveDraft = () => {
     toast.success("บันทึกแบบร่างสำเร็จ");
   };
 
   const handleNext = () => {
+    const finalItemType = itemType === "อื่นๆ" ? otherItemType.trim() : itemType;
+
     if (!selectedCustomer) {
       toast.error("กรุณาเลือกหรือสร้างข้อมูลลูกค้า");
       return;
@@ -102,23 +105,31 @@ export default function Step1Appraise() {
       toast.error("กรุณาอัพโหลดหลักฐานอย่างน้อย 1 ไฟล์");
       return;
     }
-    // Save to session storage for next step
-    sessionStorage.setItem(
-      "appraisalData",
-      JSON.stringify({
-        customer: selectedCustomer,
-        appraiser,
-        // store human-readable name as well to make it easier for later steps
-        appraiserName: appraisers.find((a) => a.id === appraiser)?.name || appraiser,
-        // generate an item id for the asset so it can be displayed later
-        itemId: Date.now().toString(),
-        itemType,
-        description,
-        appraisedValue : appraisedValueNumber,
-        appraisalDate,
-        filesCount: files.length,
-      })
-    );
+    if (!finalItemType) { 
+      toast.error("กรุณาระบุประเภททรัพย์"); 
+      return; 
+    }  
+
+// Save to session storage for next step
+sessionStorage.setItem(
+  "appraisalData",
+  JSON.stringify({
+    customer: selectedCustomer,
+
+    appraiser: selectedEmployee?.id || appraiser,            // Staff_ID
+    appraiserObj: selectedEmployee || null,                  
+    appraiserName:
+      selectedEmployee?.name                                 
+      || (appraisers.find((a) => a.id === appraiser)?.name)
+      || appraiser,                                          
+    itemId: Date.now().toString(),
+    itemType: finalItemType,
+    description,
+    appraisedValue: appraisedValueNumber,
+    appraisalDate,
+    filesCount: files.length,
+  })
+);
 
     toast.success("บันทึกข้อมูลสำเร็จ");
     navigate("/step-2");
@@ -202,17 +213,34 @@ export default function Step1Appraise() {
                     ประเภททรัพย์ <span className="text-destructive">*</span>
                   </Label>
                   <Select value={itemType} onValueChange={setItemType}>
-                    <SelectTrigger id="itemType">
-                      <SelectValue placeholder="เลือกประเภททรัพย์" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {itemTypes.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SelectTrigger id="itemType">
+                    <SelectValue placeholder="เลือกประเภททรัพย์" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {itemTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {itemType === "อื่นๆ" && (
+                  <div className="mt-2 space-y-1">
+                    <Label htmlFor="otherItemType">
+                      ระบุประเภททรัพย์ (อื่นๆ) <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="otherItemType"
+                      placeholder="เช่น เครื่องดนตรี, อุปกรณ์กีฬา, ฯลฯ"
+                      value={otherItemType}
+                      onChange={(e) => setOtherItemType(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      ค่านี้จะถูกบันทึกเป็นประเภททรัพย์เหมือนรายการอื่น ๆ
+                    </p>
+                  </div>
+                )}
+
                 </div>
 
                 <div>
