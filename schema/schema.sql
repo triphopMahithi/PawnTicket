@@ -63,7 +63,7 @@ CREATE TABLE Appraisal (
   appraisal_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
   appraised_value DECIMAL(12,2) NOT NULL,
   appraisal_Date DATETIME,
-  evidence BLOB NOT NULL,
+  evidence BLOB NULL,
   item_ID INT UNSIGNED NOT NULL,
   Staff_ID INT UNSIGNED NOT NULL,
   PRIMARY KEY (appraisal_ID),
