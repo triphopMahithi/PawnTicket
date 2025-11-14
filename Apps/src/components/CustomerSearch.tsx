@@ -14,6 +14,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
+const API_BASE_URL = "http://localhost:3001"; // ถ้าจะย้ายเป็น env ค่อยเปลี่ยนทีหลังได้
+
 interface Address {
   houseNo?: string;
   street?: string;
@@ -62,71 +64,75 @@ export function CustomerSearch({ onSelect, selectedCustomer }: CustomerSearchPro
       note: "",
     },
   });
-// === Server-side search ===
-const [serverCustomers, setServerCustomers] = useState<Customer[]>([]);
-const [loading, setLoading] = useState(false);
-const [errorMsg, setErrorMsg] = useState<string | null>(null);
-const abortRef = useRef<AbortController | null>(null);
 
-useEffect(() => {
-  const q = searchQuery.trim();
-  if (!q) {
-    setServerCustomers([]);
-    setLoading(false);
-    setErrorMsg(null);
-    return;
-  }
+  // === Server-side search ===
+  const [serverCustomers, setServerCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const timer = setTimeout(async () => {
-    try {
-      setLoading(true);
-      setErrorMsg(null);
-
-      if (abortRef.current) abortRef.current.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-
-      const params = new URLSearchParams({ q, limit: "20" });
-      const resp = await fetch(`http://localhost:3001/api/customers?${params}`, {
-        signal: controller.signal,
-      });
-      if (!resp.ok) throw new Error("fetch_failed");
-
-      const data = await resp.json();
-      const items: Customer[] = (data.items || []).map((c: any) => ({
-        id: String(c.id),
-        name: String(c.name ?? ""),
-        nationalId: String(c.nationalId ?? ""),
-        phone: String(c.phone ?? ""),
-        dateOfBirthISO: c.dateOfBirthISO, 
-        address: c.address
-          ? {
-              houseNo: "",
-              street: "",
-              tambon: "",
-              amphoe: "",
-              province: "",
-              postalCode: "",
-              note: "",
-              raw: String(c.address.raw ?? ""),
-            }
-          : undefined,
-      }));
-
-      setServerCustomers(items);
-    } catch (e: any) {
-      if (e.name !== "AbortError") setErrorMsg("ค้นหาจากฐานข้อมูลไม่สำเร็จ");
-    } finally {
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) {
+      setServerCustomers([]);
       setLoading(false);
+      setErrorMsg(null);
+      return;
     }
-  }, 300); // debounce 300ms
 
-  return () => clearTimeout(timer);
-}, [searchQuery]);
+    const timer = setTimeout(async () => {
+      try {
+        setLoading(true);
+        setErrorMsg(null);
+
+        if (abortRef.current) abortRef.current.abort();
+        const controller = new AbortController();
+        abortRef.current = controller;
+
+        const params = new URLSearchParams({ q, limit: "20" });
+        const resp = await fetch(`${API_BASE_URL}/api/customers?${params}`, {
+          signal: controller.signal,
+        });
+        if (!resp.ok) throw new Error("fetch_failed");
+
+        const data = await resp.json();
+        const items: Customer[] = (data.items || []).map((c: any) => ({
+          id: String(c.id),
+          name: String(c.name ?? ""),
+          nationalId: String(c.nationalId ?? ""),
+          phone: String(c.phone ?? ""),
+          dateOfBirthISO: c.dateOfBirthISO,
+          address: c.address
+            ? {
+                houseNo: "",
+                street: "",
+                tambon: "",
+                amphoe: "",
+                province: "",
+                postalCode: "",
+                note: "",
+                raw: String(c.address.raw ?? ""),
+              }
+            : undefined,
+        }));
+
+        setServerCustomers(items);
+      } catch (e: any) {
+        if (e.name !== "AbortError") setErrorMsg("ค้นหาจากฐานข้อมูลไม่สำเร็จ");
+      } finally {
+        setLoading(false);
+      }
+    }, 300); // debounce 300ms
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // วันเกิดแบบ native input date
   const [dobISO, setDobISO] = useState<string>("");
   const TODAY = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+
+  // สำหรับปุ่มบันทึก (กันดับเบิลคลิก)
+  const [creating, setCreating] = useState(false);
 
   // ---------- Utils ----------
   const onlyDigits = (s: string) => s.replace(/\D/g, "");
@@ -187,21 +193,20 @@ useEffect(() => {
   const isValidPostalCode = (pc: string) => /^\d{5}$/.test(onlyDigits(pc));
 
   const formatAddressLine = (a?: Address) => {
-  if (!a) return "-";
-  if (a.raw && a.raw.trim()) return a.raw.trim(); // << ใช้ raw ถ้ามี
-  const parts = [
-    a.houseNo && `เลขที่ ${a.houseNo}`,
-    a.street && `ถ.${a.street}`,
-    a.tambon && `ต.${a.tambon}`,
-    a.amphoe && `อ.${a.amphoe}`,
-    a.province && `จ.${a.province}`,
-    a.postalCode,
-  ].filter(Boolean);
-  return parts.length ? parts.join(" ") : "-";
-};
+    if (!a) return "-";
+    if (a.raw && a.raw.trim()) return a.raw.trim(); // ใช้ raw ถ้ามี
+    const parts = [
+      a.houseNo && `เลขที่ ${a.houseNo}`,
+      a.street && `ถ.${a.street}`,
+      a.tambon && `ต.${a.tambon}`,
+      a.amphoe && `อ.${a.amphoe}`,
+      a.province && `จ.${a.province}`,
+      a.postalCode,
+    ].filter(Boolean);
+    return parts.length ? parts.join(" ") : "-";
+  };
 
-
-  // ---------- Search ----------
+  // ---------- Search (local cache สำหรับกันซ้ำ) ----------
   const filteredCustomers = customers.filter((c) => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return false;
@@ -226,8 +231,10 @@ useEffect(() => {
     );
   });
 
-  // ---------- Create ----------
-  const handleCreateCustomer = () => {
+  // ---------- Create (เชื่อมกับ backend) ----------
+  const handleCreateCustomer = async () => {
+    if (creating) return;
+
     const name = newCustomer.name.trim();
     const nat = onlyDigits(newCustomer.nationalId).slice(0, 13);
     const rawPhone = onlyDigits(newCustomer.phone);
@@ -238,8 +245,8 @@ useEffect(() => {
       toast.error("กรุณากรอกข้อมูลให้ครบถ้วน (ชื่อ-บัตรประชาชน-เบอร์โทร)");
       return;
     }
-    //if (nat.length !== 13 || !isValidThaiID(nat)) {
-    if (nat.length !== 13) {
+    // ถ้าจะใช้ตรวจ checksum จริง ให้ใช้ isValidThaiID(nat) เพิ่มได้
+    if (nat.length !== 13 /* || !isValidThaiID(nat) */) {
       toast.error("เลขบัตรประชาชนไม่ถูกต้อง");
       return;
     }
@@ -270,22 +277,22 @@ useEffect(() => {
       return;
     }
 
-    // กันซ้ำด้วยเลขบัตร/เบอร์
+    // กันซ้ำฝั่ง frontend ก่อน (จาก cache ของ component)
     const e164 = toE164(phone);
     const dup = customers.find(
       (c) => onlyDigits(c.nationalId) === nat || toE164(c.phone) === e164
     );
     if (dup) {
-      toast.error("ลูกค้าคนนี้มีอยู่แล้วในระบบ");
+      toast.error("ลูกค้าคนนี้มีอยู่แล้วในระบบ (ตรวจจากรายการในหน้านี้)");
       return;
     }
 
-    const customer: Customer = {
-      id: `C${Date.now()}`,
+    // เตรียม payload ให้ตรงกับ backend
+    const payload = {
       name,
       nationalId: nat,
       phone,
-      dateOfBirthISO: dobISO, // เก็บเป็น "YYYY-MM-DD"
+      dateOfBirthISO: dobISO,
       address: {
         houseNo: addr.houseNo?.trim() || undefined,
         street: addr.street?.trim() || undefined,
@@ -297,20 +304,80 @@ useEffect(() => {
       },
     };
 
-    setCustomers((prev) => [customer, ...prev]);
-    onSelect(customer);
-    setIsOpen(false);
+    try {
+      setCreating(true);
 
-    // reset form
-    setNewCustomer({
-      name: "",
-      nationalId: "",
-      phone: "",
-      address: { houseNo: "", street: "", tambon: "", amphoe: "", province: "", postalCode: "", note: "" },
-    });
-    setDobISO(""); //  รีเซ็ตวันเกิด
+      const resp = await fetch(`${API_BASE_URL}/api/customers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    toast.success("เพิ่มข้อมูลลูกค้าสำเร็จ");
+      const data = await resp.json().catch(() => ({} as any));
+
+      if (!resp.ok) {
+        if (resp.status === 409) {
+          toast.error("ลูกค้าคนนี้มีอยู่แล้วในฐานข้อมูล (ซ้ำจากบัตรประชาชนหรือเบอร์โทร)");
+        } else if (resp.status === 400) {
+          toast.error("ข้อมูลไม่ถูกต้อง โปรดตรวจสอบอีกครั้ง");
+        } else {
+          toast.error("บันทึกข้อมูลลูกค้าไม่สำเร็จ");
+        }
+        return;
+      }
+
+      // backend ส่ง { item: { id, name, nationalId, phone, dateOfBirthISO, address:{raw} } }
+      const saved = data.item || {};
+
+      const customer: Customer = {
+        id: String(saved.id ?? ""),
+        name: String(saved.name ?? name),
+        nationalId: String(saved.nationalId ?? nat),
+        phone: String(saved.phone ?? phone),
+        dateOfBirthISO: saved.dateOfBirthISO ?? dobISO,
+        address: {
+          houseNo: addr.houseNo?.trim() || "",
+          street: addr.street?.trim() || "",
+          tambon: addr.tambon.trim(),
+          amphoe: addr.amphoe.trim(),
+          province: addr.province.trim(),
+          postalCode: onlyDigits(addr.postalCode).slice(0, 5),
+          note: addr.note?.trim() || "",
+          raw: saved.address?.raw ?? undefined,
+        },
+      };
+
+      // อัปเดต cache ฝั่ง frontend
+      setCustomers((prev) => [customer, ...prev]);
+
+      // เลือกลูกค้าคนนี้ส่งให้ parent
+      onSelect(customer);
+      setIsOpen(false);
+
+      // reset form
+      setNewCustomer({
+        name: "",
+        nationalId: "",
+        phone: "",
+        address: {
+          houseNo: "",
+          street: "",
+          tambon: "",
+          amphoe: "",
+          province: "",
+          postalCode: "",
+          note: "",
+        },
+      });
+      setDobISO("");
+
+      toast.success("เพิ่มข้อมูลลูกค้าสำเร็จ");
+    } catch (err) {
+      console.error(err);
+      toast.error("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (
@@ -538,8 +605,12 @@ useEffect(() => {
 
               {/* ปุ่มบันทึก */}
               <div className="md:col-span-2">
-                <Button onClick={handleCreateCustomer} className="w-full">
-                  บันทึก
+                <Button
+                  onClick={handleCreateCustomer}
+                  className="w-full"
+                  disabled={creating}
+                >
+                  {creating ? "กำลังบันทึก..." : "บันทึก"}
                 </Button>
               </div>
             </div>
@@ -547,41 +618,40 @@ useEffect(() => {
         </Dialog>
       </div>
 
-      {/* Search Result */}
+      {/* Search Result (ใช้ผลจาก backend) */}
       {searchQuery && (
-  <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
-    {loading ? (
-      <div className="p-4 text-center text-muted-foreground">กำลังค้นหา...</div>
-    ) : errorMsg ? (
-      <div className="p-4 text-center text-destructive">{errorMsg}</div>
-    ) : serverCustomers.length === 0 ? (
-      <div className="p-4 text-center text-muted-foreground">ไม่พบข้อมูลลูกค้า</div>
-    ) : (
-      serverCustomers.map((customer) => (
-        <button
-          key={customer.id}
-          onClick={() => {
-            onSelect(customer);
-            setSearchQuery("");
-            toast.success(`เลือกลูกค้า: ${customer.name}`);
-          }}
-          className="w-full p-3 text-left hover:bg-muted transition-colors"
-        >
-          <p className="font-medium">{customer.name}</p>
-          <p className="text-sm text-muted-foreground">
-            {formatNationalId(customer.nationalId)} | {formatPhone(customer.phone)}
-          </p>
-          {customer.address && (
-            <p className="text-xs text-muted-foreground mt-1">
-              {formatAddressLine(customer.address)}
-            </p>
+        <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
+          {loading ? (
+            <div className="p-4 text-center text-muted-foreground">กำลังค้นหา...</div>
+          ) : errorMsg ? (
+            <div className="p-4 text-center text-destructive">{errorMsg}</div>
+          ) : serverCustomers.length === 0 ? (
+            <div className="p-4 text-center text-muted-foreground">ไม่พบข้อมูลลูกค้า</div>
+          ) : (
+            serverCustomers.map((customer) => (
+              <button
+                key={customer.id}
+                onClick={() => {
+                  onSelect(customer);
+                  setSearchQuery("");
+                  toast.success(`เลือกลูกค้า: ${customer.name}`);
+                }}
+                className="w-full p-3 text-left hover:bg-muted transition-colors"
+              >
+                <p className="font-medium">{customer.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {formatNationalId(customer.nationalId)} | {formatPhone(customer.phone)}
+                </p>
+                {customer.address && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatAddressLine(customer.address)}
+                  </p>
+                )}
+              </button>
+            ))
           )}
-        </button>
-      ))
-    )}
-  </div>
-)}
-
+        </div>
+      )}
 
       {/* Selected */}
       {selectedCustomer && (
@@ -596,7 +666,8 @@ useEffect(() => {
           </p>
           {selectedCustomer.dateOfBirthISO && (
             <p className="text-sm text-muted-foreground">
-              วันเกิด: {new Date(selectedCustomer.dateOfBirthISO).toLocaleDateString("th-TH", {
+              วันเกิด:{" "}
+              {new Date(selectedCustomer.dateOfBirthISO).toLocaleDateString("th-TH", {
                 year: "numeric",
                 month: "long",
                 day: "numeric",
@@ -609,7 +680,9 @@ useEffect(() => {
                 ที่อยู่: {formatAddressLine(selectedCustomer.address)}
               </p>
               {selectedCustomer.address.note && (
-                <p className="text-xs text-muted-foreground">หมายเหตุ: {selectedCustomer.address.note}</p>
+                <p className="text-xs text-muted-foreground">
+                  หมายเหตุ: {selectedCustomer.address.note}
+                </p>
               )}
             </>
           )}

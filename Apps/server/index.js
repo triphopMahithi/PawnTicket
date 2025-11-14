@@ -17,10 +17,17 @@ const pool = mysql.createPool({
   charset: "utf8mb4",
 });
 
-// ช่วยหนีอักขระสำหรับ LIKE
 const escapeLike = (s = "") => String(s).replace(/([%_\\])/g, "\\$1");
 const onlyDigits = (s = "") => String(s).replace(/\D/g, "");
 
+// item_status
+const ALLOWED_ITEM_STATUS = new Set([
+  "IN_STORAGE",
+  "RETURNED_TO_CUSTOMER",
+  "FORFEITED_READY_FOR_SALE",
+  "SOLD",
+  "OTHER",
+]);
 
 app.get("/api/customers", async (req, res) => {
   try {
@@ -32,7 +39,6 @@ app.get("/api/customers", async (req, res) => {
     const like = `%${escapeLike(q)}%`;
     const qDigits = q.replace(/\D/g, "");
 
-    // สร้าง SQL ทีละส่วน + เก็บ params ให้พอดีกับจำนวน ?
     let sql = `
       SELECT
         Customer_ID AS id,
@@ -59,13 +65,7 @@ app.get("/api/customers", async (req, res) => {
     }
 
     sql += ` ORDER BY Customer_ID DESC LIMIT ${limit}`;
-
-    // ดีบักจำนวน placeholder vs params ถ้าต้องการ
-    // console.log('placeholders:', (sql.match(/\?/g)||[]).length, 'params:', params.length);
-
-    // ใช้ query หรือ execute ก็ได้ (ตรงนี้ไม่มี LIMIT ? แล้ว)
     const [rows] = await pool.query(sql, params);
-
     const items = rows.map(r => ({
       id: String(r.id),
       name: r.name,
@@ -115,24 +115,250 @@ app.get("/api/employees", async (req, res) => {
       `;
       params.push(`%${qDigits}%`);
     }
-
-    // ฝัง LIMIT เป็นตัวเลข (เลี่ยงปัญหา LIMIT ?)
     sql += ` ORDER BY Staff_ID DESC LIMIT ${limit}`;
 
     const [rows] = await pool.query(sql, params);
 
     const items = rows.map(r => ({
-      id: String(r.id),                        // map -> staff_ID
+      id: String(r.id),                        
       first_name: String(r.first_name ?? ""),
       last_name:  String(r.last_name  ?? ""),
-      phone_number: String(r.phone_number ?? ""), // digits-only แนะนำให้เก็บ/แสดงตามจริง
-      position: String(r.position ?? "STAFF"),    // 'STAFF'|'SUPERVISOR'|'MANAGER'
+      phone_number: String(r.phone_number ?? ""), 
+      position: String(r.position ?? "STAFF"),    
     }));
 
     res.json({ items });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "server_error" });
+  }
+});
+
+
+app.post("/api/customers", async (req, res) => {
+  try {
+    const onlyDigits = (s = "") => String(s).replace(/\D/g, "");
+
+    const {
+      name = "",
+      nationalId = "",
+      phone = "",
+      dateOfBirthISO = null,
+      address = null, // { houseNo, street, tambon, amphoe, province, postalCode, note, raw? }
+    } = req.body || {};
+
+    const fullName = String(name).trim();
+    const nat = onlyDigits(nationalId);
+    const phoneDigits = onlyDigits(phone);
+    const dob =
+      dateOfBirthISO && /^\d{4}-\d{2}-\d{2}$/.test(String(dateOfBirthISO))
+        ? String(dateOfBirthISO)
+        : null;
+
+    let first_name = "";
+    let last_name = "";
+    if (fullName) {
+      const parts = fullName.split(/\s+/);
+      first_name = parts.shift() || "";
+      last_name = parts.join(" ");
+    }
+
+    const addressLine =
+      (address && address.raw && String(address.raw).trim()) ||
+      [
+        address?.houseNo && `เลขที่ ${address.houseNo}`,
+        address?.street && `ถ.${address.street}`,
+        address?.tambon && `ต.${address.tambon}`,
+        address?.amphoe && `อ.${address.amphoe}`,
+        address?.province && `จ.${address.province}`,
+        address?.postalCode && `${address.postalCode}`,
+      ]
+        .filter(Boolean)
+        .join(" ");
+
+    if (!fullName || nat.length !== 13 || !phoneDigits) {
+      return res.status(400).json({ error: "bad_request" });
+    }
+
+    const [dup] = await pool.query(
+      `
+      SELECT Customer_ID FROM Customer
+      WHERE national_ID = ?
+         OR REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone_number,'-',''),' ',''),'(',''),')',''),'+','') = ?
+    `,
+      [nat, phoneDigits]
+    );
+    if (dup.length) {
+      return res.status(409).json({ error: "duplicate" });
+    }
+
+    const [result] = await pool.execute(
+      `INSERT INTO Customer
+        (first_name, last_name, national_ID, date_of_birth, address, phone_number, kyc_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [first_name, last_name, nat, dob, addressLine || null, phoneDigits, "PENDING"]
+    );
+
+    const insertedId = result.insertId;
+
+    return res.status(201).json({
+      item: {
+        id: String(insertedId),
+        name: fullName,
+        nationalId: nat,
+        phone: phoneDigits,
+        dateOfBirthISO: dob,
+        address: addressLine ? { raw: addressLine } : undefined,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+
+
+app.post("/api/pawn-items", async (req, res) => {
+  try {
+    const {
+      itemType = "",
+      description = "",
+      appraisedValue = null,
+      itemStatus = "IN_STORAGE",
+
+      staffId = null,       
+      appraisalDate = null, 
+      evidence = null,      
+    } = req.body || {};
+
+    const type = String(itemType).trim();
+    const desc = String(description).trim();
+
+    const valueNum = Number(
+      typeof appraisedValue === "string"
+        ? appraisedValue.replace(/[^\d.-]/g, "")
+        : appraisedValue
+    );
+
+    const status = String(itemStatus).trim().toUpperCase();
+
+    if (!type || !desc || !Number.isFinite(valueNum) || valueNum <= 0) {
+      return res.status(400).json({ error: "bad_request" });
+    }
+
+    if (!ALLOWED_ITEM_STATUS.has(status)) {
+      return res.status(400).json({ error: "invalid_status" });
+    }
+
+    const createAppraisal = staffId !== null && staffId !== undefined;
+
+    if (!createAppraisal) {
+      const [result] = await pool.execute(
+        `
+        INSERT INTO PawnItem (item_Type, description, appraised_value, item_status)
+        VALUES (?, ?, ?, ?)
+      `,
+        [type, desc, valueNum, status]
+      );
+
+      const insertedId = result.insertId;
+
+      return res.status(201).json({
+        item: {
+          id: String(insertedId),
+          itemType: type,
+          description: desc,
+          appraisedValue: valueNum,
+          itemStatus: status,
+        },
+      });
+    }
+
+  // Date/ISO string for MySQL DATETIME
+    const toMySQLDateTime = (value) => {
+      if (!value) return null;
+    const d = value instanceof Date ? value : new Date(value);
+      if (Number.isNaN(d.getTime())) return null;
+
+    const pad = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+             `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  };
+
+
+    const staffIdNum = Number(staffId);
+    if (!Number.isInteger(staffIdNum) || staffIdNum <= 0) {
+      return res.status(400).json({ error: "invalid_staff" });
+    }
+
+    const appraisalDateStr = toMySQLDateTime(appraisalDate);
+    if (appraisalDate && !appraisalDateStr) {
+      return res.status(400).json({ error: "invalid_appraisal_date" });
+    }
+
+    const conn = await pool.getConnection();
+
+    try {
+      await conn.beginTransaction();
+
+      const [staffRows] = await conn.query(
+        "SELECT Staff_ID FROM Employee WHERE Staff_ID = ?",
+        [staffIdNum]
+      );
+      if (!staffRows.length) {
+        await conn.rollback();
+        return res.status(400).json({ error: "staff_not_found" });
+      }
+
+      const [pawnResult] = await conn.execute(
+        `
+        INSERT INTO PawnItem (item_Type, description, appraised_value, item_status)
+        VALUES (?, ?, ?, ?)
+      `,
+        [type, desc, valueNum, status]
+      );
+
+      const itemId = pawnResult.insertId;
+
+      const evidenceBuf = evidence ? Buffer.from(String(evidence)) : null;
+
+      const [appResult] = await conn.execute(
+        `
+        INSERT INTO Appraisal
+          (appraised_value, appraisal_Date, evidence, item_ID, Staff_ID)
+        VALUES (?, ?, ?, ?, ?)
+      `,
+        [valueNum, appraisalDateStr, evidenceBuf, itemId, staffIdNum]
+      );
+
+      await conn.commit();
+
+      return res.status(201).json({
+        item: {
+          id: String(itemId),
+          itemType: type,
+          description: desc,
+          appraisedValue: valueNum,
+          itemStatus: status,
+        },
+        appraisal: {
+          id: String(appResult.insertId),
+          appraisedValue: valueNum,
+          appraisalDate: appraisalDateStr,
+          itemId: String(itemId),
+          staffId: staffIdNum,
+        },
+      });
+    } catch (err) {
+      await conn.rollback();
+      console.error(err);
+      return res.status(500).json({ error: "server_error" });
+    } finally {
+      conn.release();
+    }
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "server_error" });
   }
 });
 
