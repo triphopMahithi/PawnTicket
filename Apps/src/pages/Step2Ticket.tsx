@@ -57,7 +57,12 @@ export default function Step2Ticket() {
     return num.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
 
-  const handleNext = () => {
+  const toInt = (value: unknown): number | null => {
+    const n = Number(value);
+      return Number.isInteger(n) && n > 0 ? n : null;
+  };
+
+    const handleNext = async () => {
     if (!loanAmount || parseFloat(loanAmount.replace(/,/g, "")) <= 0) {
       toast.error("กรุณากรอกจำนวนเงินกู้");
       return;
@@ -75,36 +80,100 @@ export default function Step2Ticket() {
       return;
     }
 
-    //const appraisedValue = parseFloat(appraisalData.appraisedValue.replace(/,/g, ""));
-    //const loanValue = parseFloat(loanAmount.replace(/,/g, ""));
-    const appraisedValue = Number(String(appraisalData.appraisedValue).replace(/[^\d.-]/g, ""));
+    const appraisedValue = Number(
+      String(appraisalData.appraisedValue).replace(/[^\d.-]/g, "")
+    );
     const loanValue = Number(String(loanAmount).replace(/[^\d.-]/g, ""));
+
     if (loanValue > appraisedValue * 0.9) {
       toast.warning("จำนวนเงินกู้สูงกว่า 90% ของมูลค่าประเมิน");
     }
 
-    sessionStorage.setItem(
-      "ticketData",
-      JSON.stringify({
-        loanAmount,
-        interestRate,
-        contractDate,
-        dueDate,
-        noticeDate,
-        notes,
-      })
-    );
+    const customerId = toInt(appraisalData?.customer?.id);
+    const staffId = toInt(appraisalData?.appraiserObj?.id); 
+    const itemId = toInt(appraisalData?.itemId);
 
-    toast.success("บันทึกข้อมูลตั๋วสำเร็จ");
-    navigate("/step-3");
+    if (!customerId || !staffId || !itemId) {
+      toast.error("ไม่พบข้อมูลอ้างอิงลูกค้า/พนักงาน/ทรัพย์ สำหรับบันทึกตั๋วในระบบ");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:3001/api/pawn-tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerId,
+          staffId,
+          itemId,
+          contractDate: contractDate.toISOString(),
+          loanAmount: loanValue,
+          interestRate: Number(interestRate),
+          dueDate: dueDate ? dueDate.toISOString() : null,
+          noticeDate: noticeDate ? noticeDate.toISOString() : null,
+          contractStatus: "ACTIVE",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        switch (data.error) {
+          case "customer_not_found":
+            toast.error("ไม่พบลูกค้าในระบบ (customer_not_found)");
+            break;
+          case "staff_not_found":
+            toast.error("ไม่พบพนักงานในระบบ (staff_not_found)");
+            break;
+          case "item_not_found":
+            toast.error("ไม่พบทรัพย์จำนำในระบบ (item_not_found)");
+            break;
+          case "invalid_foreign_key":
+            toast.error("รหัสอ้างอิงไม่ถูกต้อง (invalid_foreign_key)");
+            break;
+          case "invalid_contract_date":
+            toast.error("วันที่ทำสัญญาไม่ถูกต้อง");
+            break;
+          case "due_date_before_contract_date":
+            toast.error("วันครบกำหนดต้องหลังวันทำสัญญา");
+            break;
+          default:
+            toast.error("บันทึกตั๋วไม่สำเร็จ");
+        }
+        return;
+      }
+
+      const ticketId = data.item?.id;
+
+      sessionStorage.setItem(
+        "ticketData",
+        JSON.stringify({
+          loanAmount,          
+          interestRate,
+          contractDate,
+          dueDate,
+          noticeDate,
+          notes,
+          ticketId,           
+          contractStatus: "ACTIVE",
+        })
+      );
+
+      toast.success("บันทึกข้อมูลตั๋วสำเร็จ");
+      navigate("/step-3");
+    } catch (err) {
+      console.error(err);
+      toast.error("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+    }
   };
+
 
   if (!appraisalData) {
     return null;
   }
   const displayMoney = (v: unknown, fallback = "-") => {
   if (v == null) return fallback;
-  const n = Number(String(v).replace(/[^\d.-]/g, "")); // ล้างคอมมา/สัญลักษณ์
+  const n = Number(String(v).replace(/[^\d.-]/g, "")); 
   return Number.isFinite(n) ? n.toLocaleString("th-TH") : fallback;
 };
 
