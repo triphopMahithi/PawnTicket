@@ -643,7 +643,7 @@ export default function History() {
                             </div>
                             <div className="col-span-2">
                                 <p className="font-medium">Staff ID</p>
-                                <input readOnly value={editEmployee.Staff_ID} className="border p-2 rounded w-full bg-green-100" />
+                                <input readOnly value={editEmployee.Staff_ID} className="border p-2 rounded w-full bg-gray-100" />
                             </div>
                         </div>
 
