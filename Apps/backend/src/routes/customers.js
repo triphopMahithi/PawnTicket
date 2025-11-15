@@ -277,4 +277,53 @@ router.delete("/:customerId/tickets", async (req, res) => {
     return res.status(500).json({ error: "server_error" });
   }
 });
+
+// PATCH /api/customers/:customerId
+router.patch("/:customerId", async (req, res) => {
+  const { customerId } = req.params;
+
+  const allowedFields = [
+    "first_name",
+    "last_name",
+    "national_ID",
+    "date_of_birth",
+    "address",
+    "phone_number",
+    "kyc_status",
+  ];
+
+  const setClauses = [];
+  const params = [];
+
+  for (const field of allowedFields) {
+    if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+      setClauses.push(`${field} = ?`);
+      params.push(req.body[field]);
+    }
+  }
+
+  if (setClauses.length === 0) {
+    return res
+      .status(400)
+      .json({ error: "No valid fields to update for Customer" });
+  }
+
+  params.push(customerId);
+
+  try {
+    const [result] = await pool.query(
+      `UPDATE Customer SET ${setClauses.join(", ")} WHERE Customer_ID = ?`,
+      params
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Customer not found" });
+    }
+
+    return res.json({ message: "Customer updated successfully" });
+  } catch (err) {
+    console.error("Error updating customer:", err);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
 export default router;

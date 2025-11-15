@@ -140,4 +140,49 @@ router.post("/", async (req, res) => {
   }
 });
 
+// PATCH /api/pawn-items/:itemId
+router.patch("/:itemId", async (req, res) => {
+  const { itemId } = req.params;
+
+  const allowedFields = [
+    "item_Type",
+    "description",
+    "appraised_value",
+    "item_status",
+  ];
+
+  const setClauses = [];
+  const params = [];
+
+  for (const field of allowedFields) {
+    if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+      setClauses.push(`${field} = ?`);
+      params.push(req.body[field]);
+    }
+  }
+
+  if (setClauses.length === 0) {
+    return res
+      .status(400)
+      .json({ error: "No valid fields to update for PawnItem" });
+  }
+
+  params.push(itemId);
+
+  try {
+    const [result] = await pool.query(
+      `UPDATE PawnItem SET ${setClauses.join(", ")} WHERE item_ID = ?`,
+      params
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Item not found" });
+    }
+
+    return res.json({ message: "Pawn item updated successfully" });
+  } catch (err) {
+    console.error("Error updating pawn item:", err);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
 export default router;

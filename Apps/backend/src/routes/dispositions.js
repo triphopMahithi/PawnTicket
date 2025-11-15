@@ -203,4 +203,45 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// PATCH /api/dispositions/:dispositionId
+router.patch("/:dispositionId", async (req, res) => {
+  const { dispositionId } = req.params;
+
+  const allowedFields = ["sale_date", "sale_method", "sale_price"];
+
+  const setClauses = [];
+  const params = [];
+
+  for (const field of allowedFields) {
+    if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+      setClauses.push(`${field} = ?`);
+      params.push(req.body[field]);
+    }
+  }
+
+  if (setClauses.length === 0) {
+    return res
+      .status(400)
+      .json({ error: "No valid fields to update for Disposition" });
+  }
+
+  params.push(dispositionId);
+
+  try {
+    const [result] = await pool.query(
+      `UPDATE Disposition SET ${setClauses.join(", ")} WHERE disposition_ID = ?`,
+      params
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Disposition not found" });
+    }
+
+    return res.json({ message: "Disposition updated successfully" });
+  } catch (err) {
+    console.error("Error updating disposition:", err);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+
 export default router;

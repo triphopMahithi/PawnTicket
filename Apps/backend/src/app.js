@@ -9,6 +9,7 @@ import itemRoutes from "./routes/items.js";
 import pawnTicketRoutes from "./routes/pawnTickets.js";
 import paymentRoutes from "./routes/payments.js";
 import dispositionRoutes from "./routes/dispositions.js";
+import appraisalRoutes from "./routes/appraisals.js";
 
 const app = express();
 
@@ -28,4 +29,6 @@ app.use("/api", paymentRoutes);
 // /api/dispositions
 app.use("/api/dispositions", dispositionRoutes);
 
+// /api/appraisals
+app.use("/api/appraisals", appraisalRoutes);
 export default app;

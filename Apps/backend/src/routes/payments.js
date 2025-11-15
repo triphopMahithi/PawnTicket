@@ -89,4 +89,46 @@ router.post("/payment", async (req, res) => {
   }
 });
 
+
+// PATCH /api/payments/:paymentId
+router.patch("/payments/:paymentId", async (req, res) => {
+  const { paymentId } = req.params;
+
+  const allowedFields = ["payment_date", "amount_paid", "payment_type"];
+
+  const setClauses = [];
+  const params = [];
+
+  for (const field of allowedFields) {
+    if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+      setClauses.push(`${field} = ?`);
+      params.push(req.body[field]);
+    }
+  }
+
+  if (setClauses.length === 0) {
+    return res
+      .status(400)
+      .json({ error: "No valid fields to update for Payment" });
+  }
+
+  params.push(paymentId);
+
+  try {
+    const [result] = await pool.query(
+      `UPDATE Payment SET ${setClauses.join(", ")} WHERE payment_ID = ?`,
+      params
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Payment not found" });
+    }
+
+    return res.json({ message: "Payment updated successfully" });
+  } catch (err) {
+    console.error("Error updating payment:", err);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+
 export default router;

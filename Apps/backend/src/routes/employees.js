@@ -231,4 +231,86 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// Partial update employee (เช่น สำหรับอัปเดตผู้ประเมินจาก TicketDetailModal)
+router.patch("/:id", async (req, res) => {
+  try {
+    const staffId = Number(req.params.id);
+    if (!staffId || Number.isNaN(staffId)) {
+      return res.status(400).json({
+        error: "invalid_id",
+        message: "id ต้องเป็นเลข",
+      });
+    }
+
+    const { first_name, last_name, phone_number, position } = req.body;
+
+    const fields = [];
+    const params = [];
+
+    if (first_name !== undefined) {
+      fields.push("first_name = ?");
+      params.push(first_name);
+    }
+
+    if (last_name !== undefined) {
+      fields.push("last_name = ?");
+      params.push(last_name);
+    }
+
+    if (phone_number !== undefined) {
+      fields.push("phone_number = ?");
+      params.push(phone_number);
+    }
+
+    if (position !== undefined) {
+      const posUpper = String(position).toUpperCase();
+      if (!ALLOWED_EMP_POSITIONS.includes(posUpper)) {
+        return res.status(400).json({
+          error: "invalid_position",
+          message: `position ต้องเป็นหนึ่งใน: ${ALLOWED_EMP_POSITIONS.join(", ")}`,
+        });
+      }
+      fields.push("position = ?");
+      params.push(posUpper);
+    }
+
+    if (fields.length === 0) {
+      return res.status(400).json({
+        error: "no_fields_to_update",
+        message: "ไม่มีฟิลด์ใด ๆ ให้แก้ไข",
+      });
+    }
+
+    params.push(staffId);
+
+    const [result] = await pool.execute(
+      `
+      UPDATE Employee
+      SET ${fields.join(", ")}
+      WHERE Staff_ID = ?
+      `,
+      params
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        error: "not_found",
+        message: "ไม่พบพนักงานที่ต้องการแก้ไข",
+      });
+    }
+
+    const [rows] = await pool.execute(
+      "SELECT * FROM Employee WHERE Staff_ID = ?",
+      [staffId]
+    );
+
+    return res.json({
+      message: "updated",
+      employee: rows[0],
+    });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+});
+
 export default router;

@@ -380,4 +380,56 @@ router.delete("/:ticketId", async (req, res) => {
   }
 });
 
+
+// ... endpoint เดิมของคุณ เช่น POST /, GET /:id ฯลฯ
+
+// PATCH /api/pawn-tickets/:ticketId
+router.patch("/:ticketId", async (req, res) => {
+  const { ticketId } = req.params;
+
+  const allowedFields = [
+    "Contract_Date",
+    "Loan_Amount",
+    "interest_rate",
+    "due_date_date",
+    "notice_date",
+    "contract_status",
+  ];
+
+  const setClauses = [];
+  const params = [];
+
+  for (const field of allowedFields) {
+    if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+      setClauses.push(`${field} = ?`);
+      params.push(req.body[field]);
+    }
+  }
+
+  if (setClauses.length === 0) {
+    return res
+      .status(400)
+      .json({ error: "No valid fields to update for PawnTicket" });
+  }
+
+  params.push(ticketId);
+
+  try {
+    const [result] = await pool.query(
+      `UPDATE PawnTicket SET ${setClauses.join(", ")} WHERE ticket_ID = ?`,
+      params
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    return res.json({ message: "Ticket updated successfully" });
+  } catch (err) {
+    console.error("Error updating ticket:", err);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+
+
 export default router;
