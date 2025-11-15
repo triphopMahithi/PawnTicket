@@ -412,15 +412,20 @@ export function HistoryPage() {
 
       {/* Modal: Tickets of this customer */}
       <CustomerTicketsModal
-        isOpen={isTicketsModalOpen}
-        onClose={() => setIsTicketsModalOpen(false)}
-        customer={selectedCustomer}
-        tickets={tickets}
-        loading={loadingTickets}
-        error={ticketsError}
-        onSelectTicket={handleSelectTicket}
-        getStatusColor={getStatusColor}
-      />
+  isOpen={isTicketsModalOpen}
+  onClose={() => setIsTicketsModalOpen(false)}
+  customer={selectedCustomer}
+  tickets={tickets}
+  loading={loadingTickets}
+  error={ticketsError}
+  onSelectTicket={handleSelectTicket}
+  getStatusColor={getStatusColor}
+  onEditCustomer={(customer) => {
+    // ตัวอย่าง: ไปหน้าแก้ไขลูกค้า
+    navigate(`/customers/${customer.id}/edit`);
+  }}
+/>
+
 
       {/* Modal: Detail of selected ticket */}
       <TicketDetailModal

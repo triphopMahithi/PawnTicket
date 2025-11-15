@@ -326,4 +326,56 @@ router.patch("/:customerId", async (req, res) => {
     return res.status(500).json({ error: "server_error" });
   }
 });
+
+// GET /api/customers/:customerId  - รายละเอียดลูกค้าคนเดียว
+router.get("/:customerId", async (req, res) => {
+  try {
+    const idParam = req.params.customerId;
+    const customerId = Number(idParam);
+
+    if (!Number.isInteger(customerId) || customerId <= 0) {
+      return res.status(400).json({ error: "invalid_customer_id" });
+    }
+
+    const [rows] = await pool.query(
+      `
+      SELECT
+        Customer_ID,
+        first_name,
+        last_name,
+        national_ID,
+        date_of_birth,
+        address,
+        phone_number,
+        kyc_status
+      FROM Customer
+      WHERE Customer_ID = ?
+      `,
+      [customerId]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ error: "customer_not_found" });
+    }
+
+    const r = rows[0];
+
+    return res.json({
+      id: String(r.Customer_ID),
+      first_name: r.first_name,
+      last_name: r.last_name,
+      national_ID: r.national_ID,
+      date_of_birth: r.date_of_birth
+        ? new Date(r.date_of_birth).toISOString().slice(0, 10) // YYYY-MM-DD
+        : null,
+      address: r.address,
+      phone_number: String(r.phone_number ?? ""),
+      kyc_status: r.kyc_status,
+    });
+  } catch (err) {
+    console.error("Error in GET /api/customers/:customerId:", err);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+
 export default router;
