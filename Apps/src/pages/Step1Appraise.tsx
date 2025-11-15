@@ -208,10 +208,12 @@ export default function Step1Appraise() {
               กรอกข้อมูลลูกค้าและรายละเอียดทรัพย์ที่นำมาจำนำ
             </p>
           </div>
+          {/* 
           <Button variant="outline" onClick={handleSaveDraft}>
             <Save className="w-4 h-4 mr-2" />
             บันทึกแบบร่าง
           </Button>
+          */}
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
@@ -235,6 +237,7 @@ export default function Step1Appraise() {
                 selectedEmployee={selectedEmployee}
                 allowedPositions={["staff","supervisor","manager"]}
               />
+              {/** 
               <div>
                 <Label htmlFor="appraiser">
                   เลือกผู้ประเมิน <span className="text-destructive">*</span>
@@ -252,6 +255,7 @@ export default function Step1Appraise() {
                   </SelectContent>
                 </Select>
               </div>
+*/}
             </div>
           </div>
 
@@ -313,7 +317,7 @@ export default function Step1Appraise() {
 
                 <div>
                   {/* สถานะทรัพย์ (แสดงไทย แต่จะเก็บค่าอังกฤษลงฐานข้อมูล) */}
-                <div className="pt-2">
+                  {/*                 <div className="pt-2">
                   <Label>สถานะทรัพย์</Label>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {ITEM_STATUS_OPTIONS.map((s) => (

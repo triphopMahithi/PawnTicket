@@ -1,9 +1,27 @@
 import { CheckCircle, Home, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+
+type SuccessLocationState = {
+  ticketId?: string | number;
+  contractDate?: string; // ISO string เช่น "2025-11-15T05:55:27.026Z"
+};
 
 export default function Success() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = (location.state as SuccessLocationState) || {};
+
+  // เลขที่ตั๋ว: ดึงจาก state ถ้ามี ไม่งั้นแสดง "-"
+  const ticketNumber =
+    state.ticketId !== undefined && state.ticketId !== null
+      ? state.ticketId
+      : "-";
+
+  // วันที่สร้าง: ถ้ามี contractDate จาก DB ก็ใช้วันนั้น ไม่งั้นใช้วันนี้
+  const createdAt = state.contractDate
+    ? new Date(state.contractDate)
+    : new Date();
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -11,7 +29,7 @@ export default function Success() {
         <div className="bg-success/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
           <CheckCircle className="w-10 h-10 text-success" />
         </div>
-        
+
         <h1 className="text-3xl font-bold mb-3">สร้างตั๋วจำนำสำเร็จ!</h1>
         <p className="text-muted-foreground mb-8">
           ข้อมูลทั้งหมดได้รับการบันทึกเรียบร้อยแล้ว
@@ -30,12 +48,12 @@ export default function Success() {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">เลขที่ตั๋ว</span>
-              <span className="font-medium">#{Math.floor(Math.random() * 100000)}</span>
+              <span className="font-medium">#{ticketNumber}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">วันที่สร้าง</span>
               <span className="font-medium">
-                {new Date().toLocaleDateString("th-TH", {
+                {createdAt.toLocaleDateString("th-TH", {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
@@ -50,7 +68,11 @@ export default function Success() {
             <Home className="w-4 h-4 mr-2" />
             กลับหน้าหลัก
           </Button>
-          <Button variant="outline" onClick={() => navigate("/")} className="w-full">
+          <Button
+            variant="outline"
+            onClick={() => navigate("/")}
+            className="w-full"
+          >
             สร้างตั๋วจำนำใหม่
           </Button>
         </div>

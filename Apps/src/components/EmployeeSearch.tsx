@@ -251,13 +251,14 @@ export function EmployeeSearch({
             className="pl-10"
           />
         </div>
-
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
+        {/**
             <Button variant="outline">
               <Plus className="w-4 h-4 mr-2" />
               สร้างใหม่
             </Button>
+        */}
           </DialogTrigger>
 
           <DialogContent>
