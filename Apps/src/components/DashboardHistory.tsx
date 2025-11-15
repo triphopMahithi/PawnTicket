@@ -20,14 +20,16 @@ export interface CustomerListItem {
   address?: { raw: string };
 }
 
-export  function HistoryPage() {
+export function HistoryPage() {
   const navigate = useNavigate();
 
+  // --------- state: ค้นหาลูกค้า ----------
   const [search, setSearch] = useState("");
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [customerError, setCustomerError] = useState<string | null>(null);
 
+  // --------- state: modal tickets ของลูกค้าคนเดียว ----------
   const [selectedCustomer, setSelectedCustomer] =
     useState<CustomerListItem | null>(null);
   const [tickets, setTickets] = useState<TicketSummary[]>([]);
@@ -35,6 +37,7 @@ export  function HistoryPage() {
   const [ticketsError, setTicketsError] = useState<string | null>(null);
   const [isTicketsModalOpen, setIsTicketsModalOpen] = useState(false);
 
+  // --------- state: modal ticket detail ----------
   const [selectedTicket, setSelectedTicket] = useState<TicketSummary | null>(
     null
   );
@@ -43,6 +46,16 @@ export  function HistoryPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  // --------- NEW: state ค้นหาจากหลาย Ticket ID ----------
+  const [ticketIdsInput, setTicketIdsInput] = useState("");
+  const [ticketResults, setTicketResults] = useState<TicketDetailResponse[]>(
+    []
+  );
+  const [loadingTicketResults, setLoadingTicketResults] = useState(false);
+  const [ticketResultsError, setTicketResultsError] = useState<string | null>(
+    null
+  );
 
   // ------- helper: status → สีตัวอักษร -------
   const getStatusColor = (status: string) => {
@@ -73,7 +86,9 @@ export  function HistoryPage() {
       setLoadingCustomers(true);
       setCustomerError(null);
 
-      const url = `${API_BASE}/api/customers?q=${encodeURIComponent(q)}&limit=20`;
+      const url = `${API_BASE}/api/customers?q=${encodeURIComponent(
+        q
+      )}&limit=20`;
       const res = await fetch(url);
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
@@ -128,7 +143,7 @@ export  function HistoryPage() {
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
-      const data = await res.json();
+      const data: TicketDetailResponse = await res.json();
       setTicketDetail(data);
     } catch (err: any) {
       console.error("Error fetching ticket detail:", err);
@@ -136,6 +151,76 @@ export  function HistoryPage() {
     } finally {
       setLoadingDetail(false);
     }
+  };
+
+  // ------- NEW: แยก Ticket ID ออกจาก input (คั่นด้วย , เว้นวรรค หรือขึ้นบรรทัดใหม่) -------
+  const parseTicketIdsFromInput = (input: string): string[] => {
+    return input
+      .split(/[\s,]+/) // space, comma, newline
+      .map((id) => id.trim())
+      .filter((id) => id.length > 0);
+  };
+
+  // ------- NEW: ค้นหาด้วยหลาย Ticket_ID -------
+  const handleSearchTicketsByIds = async () => {
+    const ids = parseTicketIdsFromInput(ticketIdsInput);
+
+    if (ids.length === 0) {
+      setTicketResults([]);
+      setTicketResultsError("กรุณาใส่ Ticket ID อย่างน้อย 1 รายการ");
+      return;
+    }
+
+    try {
+      setLoadingTicketResults(true);
+      setTicketResultsError(null);
+      setTicketResults([]);
+
+      const results: TicketDetailResponse[] = [];
+
+      for (const id of ids) {
+        try {
+          const url = `${API_BASE}/api/pawn-tickets/${encodeURIComponent(
+            id
+          )}/detail`;
+          const res = await fetch(url);
+
+          if (!res.ok) {
+            console.warn("ไม่พบ ticket", id, "status:", res.status);
+            continue; // ข้ามตัวที่หาไม่เจอ
+          }
+
+          const data: TicketDetailResponse = await res.json();
+          results.push(data);
+        } catch (innerErr) {
+          console.error("Error fetching ticket detail for", id, innerErr);
+          // ไม่ต้อง throw ต่อ เพื่อให้ ticket อื่นยังหาได้
+        }
+      }
+
+      if (results.length === 0) {
+        setTicketResultsError("ไม่พบ Ticket ที่ตรงกับ ID ที่ระบุ");
+      }
+
+      setTicketResults(results);
+    } catch (err) {
+      console.error("Error searching tickets by IDs:", err);
+      setTicketResultsError("เกิดข้อผิดพลาดระหว่างค้นหา Ticket");
+    } finally {
+      setLoadingTicketResults(false);
+    }
+  };
+
+  // ------- NEW: กดปุ่ม "ดูรายละเอียด" จากผลค้นหา Ticket IDs -------
+  const openDetailFromResult = (detail: TicketDetailResponse) => {
+    const anyDetail = detail as any;
+    const ticketData = anyDetail.ticket ?? {};
+
+    // ใช้ข้อมูล ticket จาก detail เป็น selectedTicket โดยตรง
+    setSelectedTicket(ticketData as TicketSummary);
+    setTicketDetail(detail);
+    setDetailError(null);
+    setIsDetailModalOpen(true);
   };
 
   // ------- render -------
@@ -148,7 +233,7 @@ export  function HistoryPage() {
         <Button onClick={() => navigate("/")}>Back</Button>
       </div>
 
-      {/* Search box */}
+      {/* Search box: ลูกค้า */}
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center mb-6">
         <input
           type="text"
@@ -167,21 +252,122 @@ export  function HistoryPage() {
           disabled={loadingCustomers}
           className="shrink-0"
         >
-          {loadingCustomers ? "กำลังค้นหา..." : "ค้นหา"}
+          {loadingCustomers ? "กำลังค้นหา..." : "ค้นหาลูกค้า"}
         </Button>
       </div>
 
-      {/* Error / Empty state / Result */}
+      {/* NEW: Search by multiple Ticket IDs */}
+      <div className="mt-6 border-t pt-6">
+        <h2 className="text-xl font-semibold mb-2">
+          ค้นหาตาม Ticket ID (ได้หลายใบ)
+        </h2>
+        <p className="text-sm text-muted-foreground mb-3">
+          พิมพ์ Ticket ID คั่นด้วยเครื่องหมายจุลภาค (,), เว้นวรรค หรือขึ้นบรรทัดใหม่
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-start">
+          <textarea
+            className="p-3 rounded-lg border border-gray-300 w-full min-h-[80px] focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+            placeholder={`เช่น 1001, 1005 1010\nหรือพิมพ์ทีละบรรทัดก็ได้`}
+            value={ticketIdsInput}
+            onChange={(e) => setTicketIdsInput(e.target.value)}
+          />
+          <Button
+            onClick={handleSearchTicketsByIds}
+            disabled={loadingTicketResults}
+            className="shrink-0"
+          >
+            {loadingTicketResults ? "กำลังค้นหา Ticket..." : "ค้นหา Ticket"}
+          </Button>
+        </div>
+
+        {ticketResultsError && (
+          <p className="text-red-600 text-sm mt-2">{ticketResultsError}</p>
+        )}
+      </div>
+
+      {/* NEW: ผลการค้นหาจากหลาย Ticket ID */}
+      {!loadingTicketResults && ticketResults.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold mb-3">
+            ผลการค้นหาจาก Ticket ID ({ticketResults.length} ใบ)
+          </h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {ticketResults.map((detail) => {
+              const anyDetail = detail as any;
+              const t = anyDetail.ticket ?? {};
+              const c = anyDetail.customer ?? {};
+
+              const customerName =
+                c.fullName ??
+                [c.first_name, c.last_name].filter(Boolean).join(" ") ??
+                "-";
+
+              const contractDate =
+                t.contract_date ??
+                t.Contract_Date ??
+                t.contractDate ??
+                null;
+
+              return (
+                <div
+                  key={t.ticket_ID}
+                  className="bg-white rounded-xl shadow p-4 flex flex-col justify-between"
+                >
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">
+                      Ticket ID:{" "}
+                      <span className="font-mono font-semibold">
+                        {t.ticket_ID}
+                      </span>
+                    </p>
+                    <p className="font-semibold text-gray-900">
+                      {customerName || "-"}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      สถานะ:{" "}
+                      <span className={getStatusColor(t.contract_status)}>
+                        {t.contract_status}
+                      </span>
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      วันที่ทำสัญญา:{" "}
+                      {contractDate
+                        ? new Date(contractDate).toLocaleDateString("th-TH")
+                        : "-"}
+                    </p>
+                  </div>
+
+                  <div className="mt-3 flex justify-end">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openDetailFromResult(detail)}
+                    >
+                      ดูรายละเอียด
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Error / Empty state / Result: ลูกค้า */}
       {customerError && (
         <p className="text-red-600 mb-4 text-sm">{customerError}</p>
       )}
 
       {!loadingCustomers && customers.length === 0 && !customerError && (
-        <p className="text-gray-500">ยังไม่มีผลลัพธ์ (ลองพิมพ์ชื่อหรือเบอร์โทร)</p>
+        <p className="text-gray-500 mt-4">
+          ยังไม่มีผลลัพธ์ลูกค้า (ลองพิมพ์ชื่อหรือเบอร์โทร)
+        </p>
       )}
 
       {customers.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {customers.map((c) => (
             <div
               key={c.id}
