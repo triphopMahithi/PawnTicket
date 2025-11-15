@@ -4,6 +4,16 @@ import { Button } from "../components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { DispositionDashboard } from "@/components/DispositionDashboard";
 import { EmployeeManager } from "@/components/EmployeeManager";
+import { HistoryPage } from "@/components/DashboardHistory";
+// src/pages/History.tsx
+
+// สร้าง interface สำหรับข้อมูลลูกค้า
+export interface CustomerListItem {
+  id: string;
+  name: string;
+  phone: string;
+  address: string;
+}
 
 interface HistoryItem {
     ticket_ID: string;
@@ -432,6 +442,10 @@ export default function History() {
                     </div>
                 </div>
             )}
+
+    <div className="p-4 md:p-6">
+      <HistoryPage />
+    </div>
     <div className="p-4 md:p-6">
       <EmployeeManager />
     </div>
