@@ -105,13 +105,44 @@ app.get("/api/customers", async (req, res) => {
 });
 
 // Step-1 (employees)
+// Step-1 (employees) : ใช้ทั้ง list + search
 app.get("/api/employees", async (req, res) => {
   try {
     const q = (req.query.q || "").trim();
-    const limit = Math.max(1, Math.min(parseInt(req.query.limit || "20", 10) || 20, 50));
+    const limit = Math.max(
+      1,
+      Math.min(parseInt(req.query.limit || "20", 10) || 20, 50)
+    );
 
-    if (!q) return res.json({ items: [] });
+    // ถ้าไม่มี q -> ดึงทุกพนักงาน (หรือจำกัดตาม limit)
+    if (!q) {
+      const [rows] = await pool.query(
+        `
+        SELECT
+          Staff_ID   AS id,
+          first_name,
+          last_name,
+          phone_number,
+          position
+        FROM Employee
+        ORDER BY Staff_ID DESC
+        LIMIT ?
+        `,
+        [limit]
+      );
 
+      const items = rows.map((r) => ({
+        id: String(r.id),
+        first_name: String(r.first_name ?? ""),
+        last_name: String(r.last_name ?? ""),
+        phone_number: String(r.phone_number ?? ""),
+        position: String(r.position ?? "STAFF"),
+      }));
+
+      return res.json({ items });
+    }
+
+    // ----- มี q -> ทำ search แบบเดิม -----
     const like = `%${escapeLike(q)}%`;
     const qDigits = onlyDigits(q);
 
@@ -139,16 +170,17 @@ app.get("/api/employees", async (req, res) => {
       `;
       params.push(`%${qDigits}%`);
     }
+
     sql += ` ORDER BY Staff_ID DESC LIMIT ${limit}`;
 
     const [rows] = await pool.query(sql, params);
 
-    const items = rows.map(r => ({
-      id: String(r.id),                        
+    const items = rows.map((r) => ({
+      id: String(r.id),
       first_name: String(r.first_name ?? ""),
-      last_name:  String(r.last_name  ?? ""),
-      phone_number: String(r.phone_number ?? ""), 
-      position: String(r.position ?? "STAFF"),    
+      last_name: String(r.last_name ?? ""),
+      phone_number: String(r.phone_number ?? ""),
+      position: String(r.position ?? "STAFF"),
     }));
 
     res.json({ items });
@@ -157,6 +189,7 @@ app.get("/api/employees", async (req, res) => {
     res.status(500).json({ error: "server_error" });
   }
 });
+
 
 // Step-1 (customers) 
 app.post("/api/customers", async (req, res) => {
@@ -887,6 +920,166 @@ app.get("/api/items/:id/summary", async (req, res) => {
     return res.status(500).json({ error: "server_error" });
   }
 });
+
+
+// ---------- 1) เพิ่มข้อมูลพนักงาน (Create) ----------
+app.post("/api/employees", async (req, res) => {
+  try {
+    const { first_name, last_name, phone_number, position } = req.body;
+
+    // ตรวจสอบค่าที่จำเป็น
+    if (!first_name || !last_name || !phone_number || !position) {
+      return res.status(400).json({
+        error: "missing_fields",
+        message: "ต้องส่ง first_name, last_name, phone_number, position ครบ",
+      });
+    }
+
+    // (ถ้าอยากจำกัดรูปแบบตำแหน่งงาน)
+    const allowedPositions = ["STAFF", "SUPERVISOR", "MANAGER"];
+    const posUpper = String(position).toUpperCase();
+    if (!allowedPositions.includes(posUpper)) {
+      return res.status(400).json({
+        error: "invalid_position",
+        message: `position ต้องเป็นหนึ่งใน: ${allowedPositions.join(", ")}`,
+      });
+    }
+
+    const [result] = await pool.execute(
+      `
+      INSERT INTO Employee (first_name, last_name, phone_number, position)
+      VALUES (?, ?, ?, ?)
+      `,
+      [first_name, last_name, phone_number, posUpper]
+    );
+
+    const insertedId = result.insertId;
+
+    const [rows] = await pool.execute(
+      "SELECT * FROM Employee WHERE Staff_ID = ?",
+      [insertedId]
+    );
+
+    res.status(201).json({
+      message: "created",
+      employee: rows[0],
+    });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+});
+
+// ---------- 2) แก้ไขข้อมูลพนักงาน (Update) ----------
+app.put("/api/employees/:id", async (req, res) => {
+  try {
+    const staffId = Number(req.params.id);
+    const { first_name, last_name, phone_number, position } = req.body;
+
+    if (!staffId || Number.isNaN(staffId)) {
+      return res.status(400).json({
+        error: "invalid_id",
+        message: "id ต้องเป็นเลข",
+      });
+    }
+
+    if (!first_name || !last_name || !phone_number || !position) {
+      return res.status(400).json({
+        error: "missing_fields",
+        message: "ต้องส่ง first_name, last_name, phone_number, position ครบ",
+      });
+    }
+
+    const allowedPositions = ["STAFF", "SUPERVISOR", "MANAGER"];
+    const posUpper = String(position).toUpperCase();
+    if (!allowedPositions.includes(posUpper)) {
+      return res.status(400).json({
+        error: "invalid_position",
+        message: `position ต้องเป็นหนึ่งใน: ${allowedPositions.join(", ")}`,
+      });
+    }
+
+    // เช็กก่อนว่ามีพนักงานคนนี้จริงไหม
+    const [foundRows] = await pool.execute(
+      "SELECT * FROM Employee WHERE Staff_ID = ?",
+      [staffId]
+    );
+
+    if (foundRows.length === 0) {
+      return res.status(404).json({
+        error: "not_found",
+        message: "ไม่พบพนักงานที่ต้องการแก้ไข",
+      });
+    }
+
+    // อัปเดต
+    const [result] = await pool.execute(
+      `
+      UPDATE Employee
+      SET first_name = ?, last_name = ?, phone_number = ?, position = ?
+      WHERE Staff_ID = ?
+      `,
+      [first_name, last_name, phone_number, posUpper, staffId]
+    );
+
+    // ดึงข้อมูลใหม่หลังอัปเดต
+    const [rows] = await pool.execute(
+      "SELECT * FROM Employee WHERE Staff_ID = ?",
+      [staffId]
+    );
+
+    res.json({
+      message: "updated",
+      employee: rows[0],
+    });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+});
+
+// ---------- 3) ลบข้อมูลพนักงาน (Delete) ----------
+app.delete("/api/employees/:id", async (req, res) => {
+  try {
+    const staffId = Number(req.params.id);
+
+    if (!staffId || Number.isNaN(staffId)) {
+      return res.status(400).json({
+        error: "invalid_id",
+        message: "id ต้องเป็นเลข",
+      });
+    }
+
+    const [result] = await pool.execute(
+      "DELETE FROM Employee WHERE Staff_ID = ?",
+      [staffId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        error: "not_found",
+        message: "ไม่พบพนักงานที่ต้องการลบ",
+      });
+    }
+
+    res.json({
+      message: "deleted",
+      Staff_ID: staffId,
+    });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+});
+
+// (แถม) ดึงรายชื่อพนักงานทั้งหมด เผื่อใช้ debug / ดูข้อมูล
+//app.get("/api/employees", async (req, res) => {
+//  try {
+//    const [rows] = await pool.execute(
+//      "SELECT * FROM Employee ORDER BY Staff_ID DESC"
+//    );
+//    res.json({ employees: rows });
+//  } catch (error) {
+//    handleServerError(res, error);
+//  }
+//});
 
 
 app.listen(process.env.PORT, () => {
