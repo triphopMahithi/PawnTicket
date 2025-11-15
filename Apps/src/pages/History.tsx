@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { DispositionDashboard } from "@/components/DispositionDashboard";
+import { EmployeeManager } from "@/components/EmployeeManager";
 
 interface HistoryItem {
     ticket_ID: string;
@@ -431,7 +432,9 @@ export default function History() {
                     </div>
                 </div>
             )}
-            
+    <div className="p-4 md:p-6">
+      <EmployeeManager />
+    </div>
     <div className="p-6 space-y-6">
       {/* ...ส่วนอื่นของ dashboard... */}
       <DispositionDashboard />
