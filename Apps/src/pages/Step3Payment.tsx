@@ -50,7 +50,6 @@ export default function Step3Payment() {
     const appraisal = sessionStorage.getItem("appraisalData");
     const ticket = sessionStorage.getItem("ticketData");
             
-            {/* Additional ticket details from Step1/Step2 to show when completed */}
     if (!appraisal || !ticket) {
       toast.error("ไม่พบข้อมูลจากขั้นตอนก่อนหน้า");
       navigate("/");
@@ -65,37 +64,110 @@ export default function Step3Payment() {
     const num = value.replace(/\D/g, "");
     return num.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
+const handleSavePayment = async () => {
+  if (!paymentAmount || parseFloat(paymentAmount.replace(/,/g, "")) <= 0) {
+    toast.error("กรุณากรอกจำนวนเงินที่ชำระ");
+    return;
+  }
+  if (!paymentMethod) {
+    toast.error("กรุณาเลือกวิธีชำระเงิน");
+    return;
+  }
+  if (!ticketData) {
+    toast.error("ไม่พบข้อมูลตั๋วจำนำ");
+    return;
+  }
 
-  const handleSavePayment = () => {
-    if (!paymentAmount || parseFloat(paymentAmount.replace(/,/g, "")) <= 0) {
-      toast.error("กรุณากรอกจำนวนเงินที่ชำระ");
+  const rawTicketId =
+    ticketData.ticket_ID ?? 
+    ticketData.id ??        
+    ticketData.ticketId;    
+
+  const ticketIdForApi = Number(rawTicketId);
+  console.log("rawTicketId =", rawTicketId, " → ticketIdForApi =", ticketIdForApi);
+
+  if (!Number.isInteger(ticketIdForApi) || ticketIdForApi <= 0) {
+    toast.error("รหัสตั๋วจำนำไม่ถูกต้อง (ticketId)");
+    return;
+  }
+
+  const rawAmount = paymentAmount.replace(/,/g, "");
+  const amountNum = Number(rawAmount);
+
+  const payload = {
+    ticket_ID: ticketIdForApi,
+    payment_date: paymentDate.toISOString(),
+    amount_paid: amountNum,
+    payment_type: paymentMethod.toUpperCase(), 
+  };
+
+  try {
+    const res = await fetch("http://localhost:3001/api/payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    console.log("Payment API response:", data);
+
+    if (!res.ok) {
+      toast.error("บันทึกการชำระเงินไม่สำเร็จ", {
+        description: data.error || "โปรดตรวจสอบข้อมูลหรือระบบเซิร์ฟเวอร์",
+      });
       return;
     }
-    if (!paymentMethod) {
-      toast.error("กรุณาเลือกวิธีชำระเงิน");
-      return;
-    }
 
+    // เก็บไว้เผื่อใช้ต่อ
     sessionStorage.setItem(
       "paymentData",
       JSON.stringify({
         paymentDate,
         paymentAmount,
         paymentMethod,
+        ticket_ID: ticketIdForApi,
+        payment_ID: data?.payment?.payment_ID ?? null,
       })
     );
 
     toast.success("บันทึกการชำระเงินสำเร็จ");
     setIsCompleted(true);
-  };
+  } catch (err) {
+    console.error("Network/Frontend error:", err);
+    toast.error("เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ");
+  }
+};
+
+const ticketId =
+  ticketData?.ticket_ID ??
+  ticketData?.id ??
+  ticketData?.ticketId ??
+  "ไม่พบข้อมูล";
+
 
   const handleFinish = () => {
-    toast.success("สร้างตั๋วจำนำสำเร็จ!", {
-      description: "ข้อมูลทั้งหมดได้รับการบันทึกแล้ว",
-    });
-    sessionStorage.clear();
-    navigate("/success");
-  };
+  // ดึง ticketId จาก ticketData (รองรับหลายแบบเผื่ออนาคตเปลี่ยน structure)
+  const ticketId =
+    ticketData?.ticket_ID ??
+    ticketData?.id ??
+    ticketData?.ticketId ??
+    null;
+
+  toast.success("สร้างตั๋วจำนำสำเร็จ!", {
+    description: "ข้อมูลทั้งหมดได้รับการบันทึกแล้ว",
+  });
+
+  // เคลียร์ sessionStorage ได้ ไม่มีปัญหา เพราะเราส่ง state ไปพร้อม navigate แล้ว
+  sessionStorage.clear();
+
+  navigate("/success", {
+    state: {
+      ticketId,                      // เลขที่ตั๋วจำนำจาก DB
+      contractDate: ticketData?.contractDate, // ใช้เป็น "วันที่สร้าง"
+    },
+  });
+};
+
 
   const handleSkipAndFinish = () => {
     toast.success("สร้างตั๋วจำนำสำเร็จ!", {
@@ -116,7 +188,7 @@ export default function Step3Payment() {
 
   const displayMoney = (v: unknown, fallback = "-") => {
     if (v == null) return fallback;
-    const n = Number(String(v).replace(/[^\d.-]/g, "")); // ล้างคอมมา/สัญลักษณ์
+    const n = Number(String(v).replace(/[^\d.-]/g, "")); 
     return Number.isFinite(n) ? n.toLocaleString("th-TH") : fallback;
 };
   return (
@@ -229,7 +301,7 @@ export default function Step3Payment() {
                   <div className="text-center border-b pb-3">
                     <h3 className="font-bold text-lg">ใบเสร็จรับเงิน</h3>
                     <p className="text-sm text-muted-foreground">
-                      #{Math.floor(Math.random() * 100000)}
+                      #{ticketId} {/* แสดง ticket_ID ที่ได้จากฐานข้อมูล */}
                     </p>
                   </div>
                   
