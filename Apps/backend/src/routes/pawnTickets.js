@@ -107,7 +107,7 @@ router.post("/", async (req, res) => {
       const [result] = await conn.execute(
         `
         INSERT INTO PawnTicket
-          (Contract_Date, Loan_Amount, interest_rate, due_date_date, notice_date, contract_status,
+          (Contract_Date, Loan_Amount, interest_rate, due_date, notice_date, contract_status,
            Customer_ID, Staff_ID, item_ID)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
@@ -173,7 +173,7 @@ router.get("/:ticketId/detail", async (req, res) => {
         pt.Contract_Date,
         pt.Loan_Amount,
         pt.interest_rate,
-        pt.due_date_date,
+        pt.due_date,
         pt.notice_date,
         pt.contract_status,
         pt.Customer_ID,
@@ -277,7 +277,7 @@ router.get("/:ticketId/detail", async (req, res) => {
         contract_date: row.Contract_Date,
         loan_amount: Number(row.Loan_Amount),
         interest_rate: Number(row.interest_rate),
-        due_date: row.due_date_date,
+        due_date: row.due_date,
         notice_date: row.notice_date,
         contract_status: row.contract_status,
         customer_ID: row.Customer_ID,
@@ -391,7 +391,7 @@ router.patch("/:ticketId", async (req, res) => {
     "Contract_Date",
     "Loan_Amount",
     "interest_rate",
-    "due_date_date",
+    "due_date",
     "notice_date",
     "contract_status",
   ];

@@ -33,7 +33,7 @@ router.post("/payment", async (req, res) => {
         pt.Contract_Date,
         pt.Loan_Amount,
         pt.interest_rate,
-        pt.due_date_date,
+        pt.due_date,
         pt.notice_date,
         pt.contract_status,
         c.Customer_ID,
@@ -72,7 +72,7 @@ router.post("/payment", async (req, res) => {
         contractDate: ticketData.Contract_Date,
         loanAmount: ticketData.Loan_Amount,
         interestRate: ticketData.interest_rate,
-        dueDate: ticketData.due_date_date,
+        dueDate: ticketData.due_date,
         noticeDate: ticketData.notice_date,
         contractStatus: ticketData.contract_status,
         customer: {
