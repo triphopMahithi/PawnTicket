@@ -246,7 +246,7 @@ export function EmployeeManager() {
           throw new Error(data.message || "แก้ไขข้อมูลพนักงานไม่สำเร็จ");
         }
 
-        toast.success("✓ แก้ไขข้อมูลพนักงานเรียบร้อยแล้ว");
+        toast.success("แก้ไขข้อมูลพนักงานเรียบร้อยแล้ว");
       } else {
         const res = await fetch(`${API_BASE}/api/employees`, {
           method: "POST",
