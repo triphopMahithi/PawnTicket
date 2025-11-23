@@ -10,6 +10,8 @@ import pawnTicketRoutes from "./routes/pawnTickets.js";
 import paymentRoutes from "./routes/payments.js";
 import dispositionRoutes from "./routes/dispositions.js";
 import appraisalRoutes from "./routes/appraisals.js";
+import statisticsRoutes from "./routes/statistics.js";
+import topCustomersRoutes from "./routes/topCustomersRoutes.js";
 
 const app = express();
 
@@ -31,4 +33,11 @@ app.use("/api/dispositions", dispositionRoutes);
 
 // /api/appraisals
 app.use("/api/appraisals", appraisalRoutes);
+
+// api/statistics
+app.use("/api/statistics", statisticsRoutes);
+
+// api/top-customers
+app.use("/api/top-customers", topCustomersRoutes);
+
 export default app;
