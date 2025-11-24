@@ -75,6 +75,10 @@ export default function Step2Ticket() {
       toast.error("กรุณาเลือกวันครบกำหนด");
       return;
     }
+    if (!noticeDate) {
+      toast.error("กรุณาเลือกวันแจ้งเตือน");
+      return;
+    }
     if (dueDate <= contractDate) {
       toast.error("วันครบกำหนดต้องหลังจากวันทำสัญญา");
       return;
@@ -355,7 +359,9 @@ export default function Step2Ticket() {
                 </div>
 
                 <div>
-                  <Label>วันแจ้งเตือน (ไม่บังคับ)</Label>
+                  <Label>
+                    วันแจ้งเตือน <span className="text-destructive">*</span>
+                  </Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -389,6 +395,7 @@ export default function Step2Ticket() {
                 </div>
 
                 <div>
+                  {/** 
                   <Label htmlFor="notes">หมายเหตุ</Label>
                   <Textarea
                     id="notes"
@@ -397,6 +404,7 @@ export default function Step2Ticket() {
                     onChange={(e) => setNotes(e.target.value)}
                     rows={3}
                   />
+                  */}
                 </div>
               </div>
             </div>

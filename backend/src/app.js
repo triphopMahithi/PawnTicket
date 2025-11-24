@@ -1,7 +1,7 @@
 // src/app.js
 import express from "express";
 import cors from "cors";
-
+import path from "path";
 import customerRoutes from "./routes/customers.js";
 import employeeRoutes from "./routes/employees.js";
 import pawnItemRoutes from "./routes/pawnItems.js";
@@ -12,6 +12,7 @@ import dispositionRoutes from "./routes/dispositions.js";
 import appraisalRoutes from "./routes/appraisals.js";
 import statisticsRoutes from "./routes/statistics.js";
 import topCustomersRoutes from "./routes/topCustomersRoutes.js";
+import uploadRouter from "./routes/upload.js"; 
 
 const app = express();
 
@@ -39,5 +40,16 @@ app.use("/api/statistics", statisticsRoutes);
 
 // api/top-customers
 app.use("/api/top-customers", topCustomersRoutes);
+
+
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename); 
+
+// 'PawnTicket/upload'
+app.use("/PawnTicket/upload", express.static(path.join(__dirname, "PawnTicket", "upload")));
+
+// /api/uploads
+app.use("/api/upload", uploadRouter);
 
 export default app;
