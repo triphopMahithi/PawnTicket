@@ -88,103 +88,121 @@ export default function Step1Appraise() {
   const [otherItemType, setOtherItemType] = useState("");
   const [itemStatus, setItemStatus] = useState<ItemStatus>("IN_STORAGE");
 
-  const handleSaveDraft = () => {
-    toast.success("บันทึกแบบร่างสำเร็จ");
-  };
 
-    const handleNext = async () => {
+const handleNext = async () => {
+  const finalItemType = itemType === "อื่นๆ" ? otherItemType.trim() : itemType;
+
+  // ตรวจสอบความครบถ้วนของข้อมูลก่อน
+  if (!selectedCustomer) {
+    toast.error("กรุณาเลือกหรือสร้างข้อมูลลูกค้า");
+    return;
+  }
+  if (!appraiser) {
+    toast.error("กรุณาเลือกผู้ประเมิน");
+    return;
+  }
+  if (!itemType) {
+    toast.error("กรุณาเลือกประเภททรัพย์");
+    return;
+  }
+  if (!description.trim()) {
+    toast.error("กรุณากรอกรายละเอียดทรัพย์");
+    return;
+  }
+  if (!appraisedValueNumber || appraisedValueNumber <= 0) {
+    toast.error("กรุณากรอกมูลค่าประเมินที่ถูกต้อง");
+    return;
+  }
+  if (!appraisalDate) {
+    toast.error("กรุณาเลือกวันที่ประเมิน");
+    return;
+  }
+  if (files.length === 0) {
+    toast.error("กรุณาอัพโหลดหลักฐานอย่างน้อย 1 ไฟล์");
+    return;
+  }
+  if (!finalItemType) {
+    toast.error("กรุณาระบุประเภททรัพย์");
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append("files", file);  
+    });
+
+    const uploadRes = await fetch("http://localhost:3001/api/upload/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!uploadRes.ok) {
+      const uploadData = await uploadRes.json();
+      toast.error("การอัปโหลดไฟล์ไม่สำเร็จ");
+      return;
+    }
+
+    const uploadData = await uploadRes.json();
+    if (!uploadData.filePaths) {
+      toast.error("เกิดข้อผิดพลาดในการอัปโหลดไฟล์");
+      return;
+    }
+
     const finalItemType = itemType === "อื่นๆ" ? otherItemType.trim() : itemType;
+    const pawnItemRes = await fetch("http://localhost:3001/api/pawn-items", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        itemType: finalItemType,
+        description,
+        appraisedValue: appraisedValueNumber,
+        itemStatus,
+        staffId: selectedEmployee?.id,
+        appraisalDate: appraisalDate?.toISOString(),
+        customerId: selectedCustomer?.id,
+        filePaths: uploadData.filePaths, 
+      }),
+    });
 
-    if (!selectedCustomer) {
-      toast.error("กรุณาเลือกหรือสร้างข้อมูลลูกค้า");
-      return;
-    }
-    if (!appraiser) {
-      toast.error("กรุณาเลือกผู้ประเมิน");
-      return;
-    }
-    if (!itemType) {
-      toast.error("กรุณาเลือกประเภททรัพย์");
-      return;
-    }
-    if (!description.trim()) {
-      toast.error("กรุณากรอกรายละเอียดทรัพย์");
-      return;
-    }
-    if (!appraisedValueNumber || appraisedValueNumber <= 0) {
-      toast.error("กรุณากรอกมูลค่าประเมินที่ถูกต้อง");
-      return;
-    }
-    if (!appraisalDate) {
-      toast.error("กรุณาเลือกวันที่ประเมิน");
-      return;
-    }
-    if (files.length === 0) {
-      toast.error("กรุณาอัพโหลดหลักฐานอย่างน้อย 1 ไฟล์");
-      return;
-    }
-    if (!finalItemType) {
-      toast.error("กรุณาระบุประเภททรัพย์");
+    if (!pawnItemRes.ok) {
+      const pawnItemData = await pawnItemRes.json();
+      console.error("pawn-items error:", pawnItemData);
+      toast.error("บันทึกทรัพย์ลงฐานข้อมูลไม่สำเร็จ");
       return;
     }
 
-    try {
-      // 1) ส่งรายละเอียดทรัพย์ไปบันทึกในตาราง PawnItem
-      const res = await fetch("http://localhost:3001/api/pawn-items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          itemType: finalItemType,
-          description,
-          appraisedValue: appraisedValueNumber,
-          itemStatus, // ค่านี้จะลง ENUM ใน DB
-          staffId: selectedEmployee?.id,              // มาจาก EmployeeSearch
-          appraisalDate: appraisalDate?.toISOString() // Date ที่เลือกจาก Calendar
-        }),
-      });
+    const pawnItemData = await pawnItemRes.json();
+    const pawnItem = pawnItemData.item;
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        console.error("pawn-items error:", data);
-        toast.error("บันทึกทรัพย์ลงฐานข้อมูลไม่สำเร็จ");
-        return;
-      }
+    sessionStorage.setItem(
+      "appraisalData",
+      JSON.stringify({
+        customer: selectedCustomer,
+        appraiser: selectedEmployee?.id || appraiser,
+        appraiserObj: selectedEmployee || null,
+        appraiserName:
+          (selectedEmployee as any)?.name ||
+          (appraisers.find((a) => a.id === appraiser)?.name) ||
+          appraiser,
+        itemId: pawnItem?.id ? String(pawnItem.id) : Date.now().toString(),
+        itemType: finalItemType,
+        description,
+        appraisedValue: appraisedValueNumber,
+        appraisalDate,
+        filesCount: files.length,
+        itemStatus,
+      })
+    );
 
-      const data = await res.json();
-      const pawnItem = data.item; // รูปแบบตาม backend ที่เราเขียน: { item: { id, itemType, ... } }
+    toast.success("บันทึกข้อมูลสำเร็จ");
+    navigate("/step-2");
+  } catch (err) {
+    console.error(err);
+    toast.error("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+  }
+};
 
-      // 2) Save to session storage for next step
-      sessionStorage.setItem(
-        "appraisalData",
-        JSON.stringify({
-          customer: selectedCustomer,
-
-          appraiser: selectedEmployee?.id || appraiser, // Staff_ID
-          appraiserObj: selectedEmployee || null,
-          appraiserName:
-            (selectedEmployee as any)?.name ||
-            (appraisers.find((a) => a.id === appraiser)?.name) ||
-            appraiser,
-
-          // ใช้ id จากฐานข้อมูล ถ้าไม่มี fallback เป็น Date.now()
-          itemId: pawnItem?.id ? String(pawnItem.id) : Date.now().toString(),
-
-          itemType: finalItemType,
-          description,
-          appraisedValue: appraisedValueNumber,
-          appraisalDate,
-          filesCount: files.length,
-          itemStatus, // เก็บเผื่อไปใช้ใน step ต่อไป
-        })
-      );
-
-      toast.success("บันทึกข้อมูลสำเร็จ");
-      navigate("/step-2");
-    } catch (err) {
-      console.error(err);
-      toast.error("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
-    }
-  };
 
 
   const formatMoney = (value: string) => {
@@ -208,12 +226,6 @@ export default function Step1Appraise() {
               กรอกข้อมูลลูกค้าและรายละเอียดทรัพย์ที่นำมาจำนำ
             </p>
           </div>
-          {/* 
-          <Button variant="outline" onClick={handleSaveDraft}>
-            <Save className="w-4 h-4 mr-2" />
-            บันทึกแบบร่าง
-          </Button>
-          */}
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
@@ -237,25 +249,6 @@ export default function Step1Appraise() {
                 selectedEmployee={selectedEmployee}
                 allowedPositions={["staff","supervisor","manager"]}
               />
-              {/** 
-              <div>
-                <Label htmlFor="appraiser">
-                  เลือกผู้ประเมิน <span className="text-destructive">*</span>
-                </Label>
-                <Select value={appraiser} onValueChange={setAppraiser}>
-                  <SelectTrigger id="appraiser">
-                    <SelectValue placeholder="เลือกผู้ประเมิน" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {appraisers.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-*/}
             </div>
           </div>
 
@@ -309,44 +302,11 @@ export default function Step1Appraise() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={4}
+                    maxLength={500} 
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     {description.length} / 500 ตัวอักษร
                   </p>
-                </div>
-
-                <div>
-                  {/* สถานะทรัพย์ (แสดงไทย แต่จะเก็บค่าอังกฤษลงฐานข้อมูล) */}
-                  {/*                 <div className="pt-2">
-                  <Label>สถานะทรัพย์</Label>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {ITEM_STATUS_OPTIONS.map((s) => (
-                      <Button
-                        key={s}
-                        type="button"
-                        variant={itemStatus === s ? "default" : "outline"}
-                        aria-pressed={itemStatus === s}
-                        onClick={() => setItemStatus(s)}
-                      >
-                        {ITEM_STATUS_LABEL[s]}
-                      </Button>
-                    ))}
-                  </div>
-                  
-                  <p className="text-xs text-muted-foreground mt-2">
-                    ค่าที่บันทึกลงฐานข้อมูล:{" "}
-                    <code className="font-mono">{itemStatus}</code>
-                  </p>
-                </div>
-
-                    
-                   {/** 
-                  <Label>สถานะ</Label>
-                  <div className="mt-2">
-                    <Badge variant="secondary">ในคลัง</Badge>
-                  </div>
-                  */}
-
                 </div>
               </div>
             </div>

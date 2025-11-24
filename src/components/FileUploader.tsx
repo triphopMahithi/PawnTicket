@@ -20,6 +20,7 @@ export function FileUploader({
   acceptedTypes = ["image/jpeg", "image/png", "application/pdf"],
 }: FileUploaderProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const validateFile = (file: File): boolean => {
     if (!acceptedTypes.includes(file.type)) {
@@ -52,7 +53,6 @@ export function FileUploader({
 
       if (validFiles.length > 0) {
         onFilesChange([...files, ...validFiles]);
-        toast.success(`อัพโหลด ${validFiles.length} ไฟล์สำเร็จ`);
       }
     },
     [files, maxFiles, onFilesChange]
@@ -117,16 +117,9 @@ export function FileUploader({
       {files.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {files.map((file, index) => (
-            <div
-              key={index}
-              className="relative group border rounded-lg overflow-hidden"
-            >
+            <div key={index} className="relative group border rounded-lg overflow-hidden">
               {file.type.startsWith("image/") ? (
-                <img
-                  src={URL.createObjectURL(file)}
-                  alt={file.name}
-                  className="w-full h-32 object-cover"
-                />
+                <img src={URL.createObjectURL(file)} alt={file.name} className="w-full h-32 object-cover" />
               ) : (
                 <div className="w-full h-32 flex items-center justify-center bg-muted">
                   <FileIcon className="w-12 h-12 text-muted-foreground" />

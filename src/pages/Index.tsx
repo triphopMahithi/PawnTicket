@@ -11,13 +11,17 @@ export default function Index() {
       <header className="border-b bg-card sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {/**
             <div className="w-10 h-10 bg-accent rounded-lg flex items-center justify-center">
               <FileText className="w-6 h-6 text-accent-foreground" />
             </div>
+             */}
             <div>
+              {/**
               <h1 className="text-xl font-bold">ระบบจัดการโรงรับจำนำ</h1>
               <p className="text-xs text-muted-foreground">Pawn Shop Management</p>
-            </div>
+             */}
+              </div>
           </div>
           <div className="flex gap-2">
             <Button onClick={() => navigate("/step-1")}>
