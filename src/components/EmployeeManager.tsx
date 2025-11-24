@@ -259,7 +259,7 @@ export function EmployeeManager() {
           throw new Error(data.message || "เพิ่มข้อมูลพนักงานไม่สำเร็จ");
         }
 
-        toast.success("✓ เพิ่มพนักงานใหม่เรียบร้อยแล้ว");
+        toast.success(" เพิ่มพนักงานใหม่เรียบร้อยแล้ว");
       }
 
       setIsFormOpen(false);
@@ -286,7 +286,7 @@ export function EmployeeManager() {
         throw new Error(data.message || "ลบข้อมูลพนักงานไม่สำเร็จ");
       }
 
-      toast.success("✓ ลบข้อมูลพนักงานเรียบร้อยแล้ว");
+      toast.success(" ลบข้อมูลพนักงานเรียบร้อยแล้ว");
       setEmployeeToDelete(null);
       await fetchEmployees();
     } catch (err: any) {

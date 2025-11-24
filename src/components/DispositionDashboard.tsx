@@ -335,7 +335,7 @@ export function DispositionDashboard({
         )
       );
 
-      toast.success("✅ บันทึกการแก้ไขเรียบร้อยแล้ว");
+      toast.success("บันทึกการแก้ไขเรียบร้อยแล้ว");
       setEditOpen(false);
       setEditing(null);
     } catch (err) {
@@ -401,7 +401,7 @@ export function DispositionDashboard({
       const newDisposition: Disposition = data.disposition;
 
       setItems((prev) => [newDisposition, ...prev]);
-      toast.success("✅ สร้างรายการขายใหม่สำเร็จ");
+      toast.success("สร้างรายการขายใหม่สำเร็จ");
       setCreateOpen(false);
     } catch (err) {
       console.error("POST /api/dispositions error:", err);
@@ -433,7 +433,7 @@ export function DispositionDashboard({
       setItems((prev) =>
         prev.filter((it) => it.disposition_ID !== deletingId)
       );
-      toast.success("✅ ลบรายการเรียบร้อยแล้ว");
+      toast.success("ลบรายการเรียบร้อยแล้ว");
     } catch (err) {
       console.error("DELETE /api/dispositions error:", err);
       toast.error("เกิดข้อผิดพลาดในการลบรายการ");
