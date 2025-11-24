@@ -197,6 +197,7 @@ export default function Step2Ticket() {
               กำหนดเงื่อนไขสัญญาและรายละเอียดการจำนำ
             </p>
           </div>
+          {/**
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline">
@@ -255,7 +256,8 @@ export default function Step2Ticket() {
                 </div>
               </div>
             </DialogContent>
-          </Dialog>
+          </Dialog> 
+          */}
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">

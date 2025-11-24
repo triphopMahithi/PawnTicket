@@ -442,9 +442,11 @@ const ticketId =
             กลับ
           </Button>
           <div className="flex gap-3">
+          {/**
             <Button variant="outline" onClick={handleSkipAndFinish}>
               ข้ามและเสร็จสิ้น
             </Button>
+          */}
             <Button onClick={handleFinish} disabled={!isCompleted}>
               <CheckCircle className="w-4 h-4 mr-2" />
               เสร็จสิ้น
