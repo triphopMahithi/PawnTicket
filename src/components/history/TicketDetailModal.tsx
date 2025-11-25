@@ -36,7 +36,7 @@ export interface TicketDetailResponse {
   ticket: {
     ticket_ID: number | string;
     contract_date: string;
-    loan_amount: number;
+    Loan_Amount: number;
     interest_rate: number;
     due_date: string | null;
     notice_date: string | null;
@@ -200,7 +200,7 @@ export default function TicketDetailModal({
   // === Section 1: state + handler สำหรับแก้ไขรายละเอียดตั๋ว ===
   const [isTicketEditOpen, setIsTicketEditOpen] = useState(false);
   const [ticketForm, setTicketForm] = useState({
-    loan_amount: "",
+    Loan_Amount: "",
     interest_rate: "",
     due_date: "",
     notice_date: "",
@@ -211,7 +211,7 @@ export default function TicketDetailModal({
     if (!localDetail) return;
 
     setTicketForm({
-      loan_amount: String(localDetail.ticket.loan_amount ?? ""),
+      Loan_Amount: String(localDetail.ticket.loan_amount ?? ""),
       interest_rate: String(localDetail.ticket.interest_rate ?? ""),
       due_date: toLocalDateTimeInput(localDetail.ticket.due_date),
       notice_date: toLocalDateTimeInput(localDetail.ticket.notice_date),
@@ -225,8 +225,8 @@ export default function TicketDetailModal({
     if (!localDetail) return;
 
     if (
-      ticketForm.loan_amount.trim() !== "" &&
-      Number.isNaN(Number(ticketForm.loan_amount))
+      ticketForm.Loan_Amount.trim() !== "" &&
+      Number.isNaN(Number(ticketForm.Loan_Amount))
     ) {
       toast.error("วงเงินกู้ต้องเป็นตัวเลข");
       return;
@@ -242,8 +242,8 @@ export default function TicketDetailModal({
 
     const payload: Record<string, unknown> = {};
 
-    if (ticketForm.loan_amount.trim() !== "") {
-      payload.loan_amount = Number(ticketForm.loan_amount);
+    if (ticketForm.Loan_Amount.trim() !== "") {
+      payload.Loan_Amount = Number(ticketForm.Loan_Amount);
     }
     if (ticketForm.interest_rate.trim() !== "") {
       payload.interest_rate = Number(ticketForm.interest_rate);
@@ -285,7 +285,7 @@ export default function TicketDetailModal({
         const nextTicket = { ...prev.ticket };
 
         if (payload.loan_amount !== undefined) {
-          nextTicket.loan_amount = payload.loan_amount as number;
+          nextTicket.Loan_Amount = payload.loan_amount as number;
         }
         if (payload.interest_rate !== undefined) {
           nextTicket.interest_rate = payload.interest_rate as number;
@@ -1136,7 +1136,7 @@ export default function TicketDetailModal({
                       onChange={(e) =>
                         setTicketForm((prev) => ({
                           ...prev,
-                          loan_amount: e.target.value,
+                          Loan_Amount: e.target.value,
                         }))
                       }
                     />
