@@ -63,7 +63,6 @@ CREATE TABLE PawnTicket (
   Contract_Date DATETIME NOT NULL,
   Loan_Amount DECIMAL(12,2) NOT NULL,
   interest_rate DECIMAL(5,2) NOT NULL,
-  -- แก้ชื่อให้สั้นลง/มาตรฐาน: จากเดิม due_date_date
   due_date DATETIME NOT NULL,
   notice_date DATETIME,
   contract_status ENUM('ACTIVE','ROLLED_OVER','CANCELLED','EXPIRED')
@@ -73,15 +72,12 @@ CREATE TABLE PawnTicket (
   item_ID     INT UNSIGNED NOT NULL,
   PRIMARY KEY (ticket_ID),
 
-  CONSTRAINT fk_PT_customer FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID),
-  CONSTRAINT fk_PT_staff    FOREIGN KEY (Staff_ID)    REFERENCES Employee(Staff_ID),
-  CONSTRAINT fk_PT_item     FOREIGN KEY (item_ID)     REFERENCES PawnItem(item_ID),
+  CONSTRAINT fk_PT_customer FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID) ON DELETE CASCADE,
+  CONSTRAINT fk_PT_staff    FOREIGN KEY (Staff_ID)    REFERENCES Employee(Staff_ID) ON DELETE CASCADE,
+  CONSTRAINT fk_PT_item     FOREIGN KEY (item_ID)     REFERENCES PawnItem(item_ID) ON DELETE CASCADE,
 
-  -- ดึงประวัติตั๋วตามลูกค้า/วันที่บ่อย
   KEY idx_ticket_customer_date (Customer_ID, Contract_Date),
-  -- ช่วยดูตั๋วจาก item เดิม
   KEY idx_ticket_item (item_ID),
-  -- ช่วย filter ตามสถานะ + วันครบกำหนด
   KEY idx_ticket_status_due (contract_status, due_date)
 ) ENGINE=InnoDB;
 
@@ -96,8 +92,8 @@ CREATE TABLE Appraisal (
   item_ID INT UNSIGNED NOT NULL,
   Staff_ID INT UNSIGNED NOT NULL,
   PRIMARY KEY (appraisal_ID),
-  CONSTRAINT fk_App_item  FOREIGN KEY (item_ID) REFERENCES PawnItem(item_ID),
-  CONSTRAINT fk_App_staff FOREIGN KEY (Staff_ID) REFERENCES Employee(Staff_ID),
+  CONSTRAINT fk_App_item  FOREIGN KEY (item_ID) REFERENCES PawnItem(item_ID) ON DELETE CASCADE,
+  CONSTRAINT fk_App_staff FOREIGN KEY (Staff_ID) REFERENCES Employee(Staff_ID) ON DELETE CASCADE,
   KEY idx_appraisal_item_date (item_ID, appraisal_Date)
 ) ENGINE=InnoDB;
 
@@ -111,8 +107,7 @@ CREATE TABLE Payment (
   amount_paid DECIMAL(12,2) NOT NULL,
   payment_type ENUM('CASH','TRANSFER','CARD','ONLINE') NOT NULL,
   PRIMARY KEY (payment_ID),
-  CONSTRAINT fk_Pay_ticket FOREIGN KEY (ticket_ID) REFERENCES PawnTicket(ticket_ID),
-  -- ค้นประวัติการจ่ายตามตั๋ว/วันที่
+  CONSTRAINT fk_Pay_ticket FOREIGN KEY (ticket_ID) REFERENCES PawnTicket(ticket_ID) ON DELETE CASCADE,
   KEY idx_payment_ticket_date (ticket_ID, payment_date)
 ) ENGINE=InnoDB;
 
@@ -126,7 +121,7 @@ CREATE TABLE Disposition (
   sale_method ENUM('AUCTION','DIRECT_SALE','ONLINE','SCRAP') NOT NULL,
   sale_price DECIMAL(12,2) NOT NULL,
   PRIMARY KEY (disposition_ID),
-  CONSTRAINT fk_Disp_item FOREIGN KEY (item_ID) REFERENCES PawnItem(item_ID),
+  CONSTRAINT fk_Disp_item FOREIGN KEY (item_ID) REFERENCES PawnItem(item_ID) ON DELETE CASCADE,
   KEY idx_disposition_item (item_ID),
   KEY idx_disposition_sale_date (sale_date)
 ) ENGINE=InnoDB;

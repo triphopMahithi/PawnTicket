@@ -28,6 +28,7 @@ export default function CustomerTicketsModal({
   onCustomerUpdate
 }: CustomerTicketsModalProps) {
   const [updatedCustomer, setUpdatedCustomer] = useState<CustomerListItem | null>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false); 
   const [customerData, setCustomerData] = useState<CustomerListItem | null>(null);
 
   const getKycStatusText = (status: string | undefined) => {
@@ -42,6 +43,33 @@ export default function CustomerTicketsModal({
       return "ปฏิเสธ";
     default:
       return "-";  // กรณีที่ไม่มีสถานะ
+  }
+};
+const handleDeleteCustomer = async () => {
+  if (!customerData || !customerData.id) {
+    console.error("No customer data available for deletion");
+    toast.error("ข้อมูลลูกค้าไม่ถูกต้อง");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/customers/${customerData.id}`, {
+      method: "DELETE",
+    });
+
+    if (res.ok) {
+      toast.success("ลูกค้าถูกลบออกจากระบบแล้ว");
+      setShowDeleteConfirmation(false);
+      onClose();
+      if (onCustomerUpdate) {
+        onCustomerUpdate();
+      }
+    } else {
+      throw new Error("ไม่สามารถลบข้อมูลลูกค้าได้");
+    }
+  } catch (error) {
+    console.error("Error deleting customer:", error);
+    toast.error("ไม่สามารถลบข้อมูลลูกค้าได้");
   }
 };
 
@@ -195,6 +223,38 @@ const handleSaveCustomer = async () => {
               <Edit className="h-4 w-4 mr-2" />
               แก้ไข
             </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => setShowDeleteConfirmation(true)} // เมื่อคลิกจะเปิด Dialog ยืนยันการลบ
+              className="shrink-0"
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              ลบข้อมูลลูกค้า
+            </Button>
+          {showDeleteConfirmation && (
+  <Dialog open={showDeleteConfirmation} onOpenChange={() => setShowDeleteConfirmation(false)}>
+    <DialogContent className="max-w-md">
+      <DialogHeader>
+        <DialogTitle className="text-xl">ยืนยันการลบข้อมูลลูกค้า</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          คุณแน่ใจหรือไม่ว่าจะลบข้อมูลของลูกค้าคนนี้? ข้อมูลทั้งหมดจะถูกลบออกจากระบบ
+        </p>
+        <div className="flex gap-2">
+          <Button onClick={handleDeleteCustomer} variant="destructive">
+            ลบข้อมูลลูกค้า
+          </Button>
+          <Button variant="ghost" onClick={() => setShowDeleteConfirmation(false)}>
+            ยกเลิก
+          </Button>
+        </div>
+      </div>
+    </DialogContent>
+  </Dialog>
+)}
+
           </div>
         </DialogHeader>
 
