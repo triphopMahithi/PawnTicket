@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, ChangeEvent } from "react";
 import {
   Pencil,
   Trash2,
@@ -85,6 +85,22 @@ const POSITION_CONFIG: Record<
 };
 
 const API_BASE = "http://localhost:3001";
+const formatPhoneNumber = (value: string | null | undefined): string => {
+  if (!value) return "";
+  
+  const clean = value.replace(/\D/g, "");
+  
+  if (clean.length === 0) return "";
+
+  if (clean.length <= 3) {
+    return clean;
+  } else if (clean.length <= 6) {
+    return `${clean.slice(0, 3)}-${clean.slice(3)}`;
+  } else {
+    const limited = clean.slice(0, 10);
+    return `${limited.slice(0, 3)}-${limited.slice(3, 6)}-${limited.slice(6)}`;
+  }
+};
 
 export function EmployeeManager() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -201,9 +217,56 @@ export function EmployeeManager() {
     setEditingEmployee(emp);
     setFirstName(emp.first_name);
     setLastName(emp.last_name);
-    setPhoneNumber(emp.phone_number);
+    setPhoneNumber(formatPhoneNumber(emp.phone_number));
     setPosition(emp.position.toUpperCase() as EmployeePosition);
     setIsFormOpen(true);
+  };
+
+  
+  const handleNameChange = (
+    e: ChangeEvent<HTMLInputElement>, 
+    setter: (v: string) => void
+  ) => {
+    let val = e.target.value;
+    val = val.replace(/[^a-zA-Zก-๙\s]/g, "");
+    const firstChar = val.trim().charAt(0);
+
+    if (firstChar) {
+      if (/[a-zA-Z]/.test(firstChar)) {
+        val = val.replace(/[ก-๙]/g, "");
+        val = val
+          .split(" ")
+          .map(word => {
+            if (word.length === 0) return "";
+            return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+          })
+          .join(" ");
+          
+      } else if (/[ก-๙]/.test(firstChar)) {
+        val = val.replace(/[a-zA-Z]/g, "");
+      }
+    }
+    e.target.value = val;
+    setter(val);
+  };
+
+  const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const rawInput = e.target.value;
+    
+    if (!rawInput) {
+      setPhoneNumber("");
+      return;
+    }
+
+    const digits = rawInput.replace(/\D/g, "");
+    if (digits.length > 0 && digits[0] !== "0") {
+      return;
+    }
+    if (digits.length > 10) return;
+
+    const formatted = formatPhoneNumber(digits);
+    e.target.value = formatted; 
+    setPhoneNumber(formatted);
   };
 
   const validateForm = () => {
@@ -211,10 +274,19 @@ export function EmployeeManager() {
       toast.error("กรุณากรอกข้อมูลให้ครบทุกช่อง");
       return false;
     }
-    if (phoneNumber.trim().length < 6) {
-      toast.error("กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง");
+    
+    const cleanNumber = phoneNumber.replace(/-/g, "");
+
+    if (cleanNumber.length !== 10) {
+      toast.error(" กรุณาตรวจสอบเบอร์โทรศัพท์ให้ถูกต้อง");
       return false;
     }
+
+    if (!cleanNumber.startsWith("0")) {
+      toast.error("เกรุณาตรวจสอบเบอร์โทรศัพท์ให้ถูกต้อง");
+      return false;
+    }
+
     return true;
   };
 
@@ -224,10 +296,12 @@ export function EmployeeManager() {
     try {
       setIsSubmitting(true);
 
+      const cleanPhoneNumber = phoneNumber.replace(/-/g, "");
+
       const payload = {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
-        phone_number: phoneNumber.trim(),
+        phone_number: cleanPhoneNumber,
         position: position.toUpperCase(),
       };
 
@@ -259,7 +333,7 @@ export function EmployeeManager() {
           throw new Error(data.message || "เพิ่มข้อมูลพนักงานไม่สำเร็จ");
         }
 
-        toast.success(" เพิ่มพนักงานใหม่เรียบร้อยแล้ว");
+        toast.success("✓ เพิ่มพนักงานใหม่เรียบร้อยแล้ว");
       }
 
       setIsFormOpen(false);
@@ -286,7 +360,7 @@ export function EmployeeManager() {
         throw new Error(data.message || "ลบข้อมูลพนักงานไม่สำเร็จ");
       }
 
-      toast.success(" ลบข้อมูลพนักงานเรียบร้อยแล้ว");
+      toast.success("✓ ลบข้อมูลพนักงานเรียบร้อยแล้ว");
       setEmployeeToDelete(null);
       await fetchEmployees();
     } catch (err: any) {
@@ -483,8 +557,8 @@ export function EmployeeManager() {
                     <TableCell className="font-medium">
                       {emp.first_name} {emp.last_name}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {emp.phone_number}
+                    <TableCell className="text-muted-foreground font-mono">
+                      {formatPhoneNumber(emp.phone_number)}
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -555,8 +629,9 @@ export function EmployeeManager() {
                 <Input
                   id="first_name"
                   value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="ระบุชื่อ"
+                  onChange={(e) => handleNameChange(e, setFirstName)}
+                  placeholder="ชื่อ"
+                  autoComplete="off"
                 />
               </div>
               <div className="space-y-2">
@@ -566,8 +641,9 @@ export function EmployeeManager() {
                 <Input
                   id="last_name"
                   value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="ระบุนามสกุล"
+                  onChange={(e) => handleNameChange(e, setLastName)}
+                  placeholder="นามสกุล"
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -580,9 +656,14 @@ export function EmployeeManager() {
                 id="phone_number"
                 type="tel"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="เช่น 0891234567"
+                onChange={handlePhoneChange}
+                maxLength={12} 
+                placeholder="เบอร์โทรศัพท์"
+                autoComplete="off"
               />
+              <p className="text-[10px] text-muted-foreground text-right">
+                {phoneNumber.replace(/\D/g, "").length}/10
+              </p>
             </div>
 
             <div className="space-y-2">
