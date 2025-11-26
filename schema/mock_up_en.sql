@@ -4,16 +4,16 @@
 INSERT INTO Customer
   (Customer_ID, first_name, last_name, national_ID, date_of_birth, address, phone_number, kyc_status)
 VALUES
-  (1,  'Somchai',   'Jaidee',      '1101700234567', '1988-03-12', '123 Sukhumvit Rd, Khlong Toei, Bangkok 10110, Thailand', '089-123-4567', 'PASSED'),
-  (2,  'Suda',      'Chantarat',   '3102201456789', '1992-07-25', '55 Huay Kaew Rd, Mueang, Chiang Mai 50200, Thailand',     '098-111-2233', 'PENDING'),
-  (3,  'Arthit',    'Kittisak',    '1409909876543', '1985-11-03', '88 Mittraphap Rd, Mueang, Khon Kaen 40000, Thailand',     '091-234-5678', 'PASSED'),
-  (4,  'Narin',     'Wattanakorn', '3700100123456', '1996-01-20', '77 Sathorn Rd, Bang Rak, Bangkok 10500, Thailand',        '095-566-7788', 'FAILED'),
-  (5,  'Ploy',      'Boonmee',     '1209901122334', '1993-09-10', '19 Thepkrasattri Rd, Mueang, Phuket 83000, Thailand',     '086-990-0112', 'PASSED'),
-  (6,  'Krit',      'Chaiyawat',   '1999905566778', '1989-04-05', '200 Tiwanon Rd, Pak Kret, Nonthaburi 11120, Thailand',    '095-223-3441', 'PASSED'),
-  (7,  'Kanya',     'Ratchada',    '3100603344556', '1995-12-08', '101 Ratchadaphisek Rd, Din Daeng, Bangkok 10400, Thailand','098-155-6677','PENDING'),
-  (8,  'Prasert',   'Yodchai',     '3301407788990', '1982-02-27', '66 Posri Rd, Mueang, Udon Thani 41000, Thailand',         '089-9112-233', 'PASSED'),
-  (9,  'Siriporn',  'Thavorn',     '1501201122448', '1990-06-14', '44 Banphaprakan Rd, Mueang, Chiang Rai 57000, Thailand',  '092-2334-455', 'PASSED'),
-  (10, 'Thanakorn', 'Preecha',     '1800206677889', '1987-10-22', '35 Sukhumvit Pattaya, Bang Lamung, Chonburi 20150, Thailand','098-654-3210','PASSED');
+  (1,  'Somchai',   'Jaidee',      '1101700234567', '1988-03-12', '123 Sukhumvit Rd, Khlong Toei, Bangkok 10110, Thailand', '0891234567', 'PASSED'),
+  (2,  'Suda',      'Chantarat',   '3102201456789', '1992-07-25', '55 Huay Kaew Rd, Mueang, Chiang Mai 50200, Thailand',     '0981112233', 'PENDING'),
+  (3,  'Arthit',    'Kittisak',    '1409909876543', '1985-11-03', '88 Mittraphap Rd, Mueang, Khon Kaen 40000, Thailand',     '0912345678', 'PASSED'),
+  (4,  'Narin',     'Wattanakorn', '3700100123456', '1996-01-20', '77 Sathorn Rd, Bang Rak, Bangkok 10500, Thailand',        '0955667788', 'FAILED'),
+  (5,  'Ploy',      'Boonmee',     '1209901122334', '1993-09-10', '19 Thepkrasattri Rd, Mueang, Phuket 83000, Thailand',     '0869900112', 'PASSED'),
+  (6,  'Krit',      'Chaiyawat',   '1999905566778', '1989-04-05', '200 Tiwanon Rd, Pak Kret, Nonthaburi 11120, Thailand',    '0952233441', 'PASSED'),
+  (7,  'Kanya',     'Ratchada',    '3100603344556', '1995-12-08', '101 Ratchadaphisek Rd, Din Daeng, Bangkok 10400, Thailand','0981556677','PENDING'),
+  (8,  'Prasert',   'Yodchai',     '3301407788990', '1982-02-27', '66 Posri Rd, Mueang, Udon Thani 41000, Thailand',         '0899112233', 'PASSED'),
+  (9,  'Siriporn',  'Thavorn',     '1501201122448', '1990-06-14', '44 Banphaprakan Rd, Mueang, Chiang Rai 57000, Thailand',  '0922334455', 'PASSED'),
+  (10, 'Thanakorn', 'Preecha',     '1800206677889', '1987-10-22', '35 Sukhumvit Pattaya, Bang Lamung, Chonburi 20150, Thailand','0986543210','PASSED');
 
 -- =========================
 -- 2) Employee (10 rows)
@@ -21,16 +21,16 @@ VALUES
 INSERT INTO Employee
   (Staff_ID, first_name, last_name, phone_number, position)
 VALUES
-  (1,  'Anan',    'Kittipong',   '081-234-5678', 'STAFF'),
-  (2,  'Pimchan', 'Rattanawong', '089-765-4321', 'SUPERVISOR'),
-  (3,  'Viriya',  'Chanprasert', '082-111-2233', 'MANAGER'),
-  (4,  'Patchara','Boonchai',    '086-222-3344', 'STAFF'),
-  (5,  'Thanida', 'Kaeosod',     '083-987-6543', 'STAFF'),
-  (6,  'Nopphon', 'Jirawat',     '081-555-8899', 'SUPERVISOR'),
-  (7,  'Sarun',   'Phattanapon', '085-444-7788', 'STAFF'),
-  (8,  'Kittima', 'Chantana',    '087-321-7654', 'STAFF'),
-  (9,  'Chatchai','Apichart',    '086-909-1122', 'MANAGER'),
-  (10, 'Ratchanee','Suksan',     '089-700-3344', 'STAFF');
+  (1,  'Anan',    'Kittipong',   '0812345678', 'STAFF'),
+  (2,  'Pimchan', 'Rattanawong', '0897654321', 'SUPERVISOR'),
+  (3,  'Viriya',  'Chanprasert', '0821112233', 'MANAGER'),
+  (4,  'Patchara','Boonchai',    '0862223344', 'STAFF'),
+  (5,  'Thanida', 'Kaeosod',     '0839876543', 'STAFF'),
+  (6,  'Nopphon', 'Jirawat',     '0815558899', 'SUPERVISOR'),
+  (7,  'Sarun',   'Phattanapon', '0854447788', 'STAFF'),
+  (8,  'Kittima', 'Chantana',    '0873217654', 'STAFF'),
+  (9,  'Chatchai','Apichart',    '0869091122', 'MANAGER'),
+  (10, 'Ratchanee','Suksan',     '0897003344', 'STAFF');
 
 -- =========================
 -- 3) PawnItem (10 rows)
