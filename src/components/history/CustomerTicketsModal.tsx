@@ -115,7 +115,7 @@ const handleSaveCustomer = async () => {
       body: JSON.stringify({
         first_name: updatedCustomer.name.split(" ")[0],
         last_name: updatedCustomer.name.split(" ")[1] || "",
-        phone_number: updatedCustomer.phone,
+        phone_number: updatedCustomer.phone.replace(/-/g, ""), // ลบขีดออกจากเบอร์โทรศัพท์
         national_ID: updatedCustomer.nationalId,
         date_of_birth: updatedCustomer.dateOfBirth,
         address: updatedCustomer.address?.raw,
@@ -205,7 +205,7 @@ const formatDateForInput = (date) => {
   const handleCancelEdit = () => {
     setUpdatedCustomer(null); // ปิดฟอร์มแก้ไขโดยไม่บันทึกข้อมูล
   };
-
+  
   const handleEditClick = () => {
     if (customerData) {
       setUpdatedCustomer({
