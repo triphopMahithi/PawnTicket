@@ -153,7 +153,55 @@ const handleSaveCustomer = async () => {
     toast.error("ไม่สามารถบันทึกข้อมูลลูกค้าได้");
   }
 };
+const handlePhoneChange = (e) => {
+  let value = e.target.value.replace(/\D/g, ''); // ลบตัวอักษรที่ไม่ใช่ตัวเลข
 
+  // จำกัดให้กรอกได้แค่ 10 ตัว
+  if (value.length > 10) {
+    value = value.substring(0, 10); // จำกัดให้มีแค่ 10 ตัว
+  }
+
+  // เพิ่มขีดหลังจากตัวเลขที่ 3 และ 6
+  if (value.length > 3 && value.length <= 6) {
+    value = value.substring(0, 3) + '-' + value.substring(3);
+  } else if (value.length > 6) {
+    value = value.substring(0, 3) + '-' + value.substring(3, 6) + '-' + value.substring(6, 10);
+  }
+
+  // บังคับให้เบอร์โทรศัพท์เริ่มต้นด้วย 0
+  if (value.length > 0 && value[0] !== '0') {
+    value = '0' + value; // บังคับให้เริ่มต้นด้วย 0
+  }
+
+  setUpdatedCustomer({ ...updatedCustomer, phone: value });
+};
+
+const handleNationalIdChange = (e) => {
+  let value = e.target.value.replace(/\D/g, ''); // ลบตัวอักษรที่ไม่ใช่ตัวเลข
+
+  // จำกัดให้กรอกได้แค่ 13 ตัว
+  if (value.length > 13) {
+    value = value.substring(0, 13);
+  }
+
+  setUpdatedCustomer({ ...updatedCustomer, nationalId: value });
+};
+
+const handleDateChange = (e) => {
+  const date = e.target.value;  // รับค่าจาก input
+  // การแปลงวันที่ให้ถูกต้องก่อนส่ง
+  const formattedDate = new Date(date).toISOString().split('T')[0];  // แปลงเป็น ISO format และเอาเฉพาะวันที่
+  setUpdatedCustomer({ ...updatedCustomer, dateOfBirth: formattedDate });
+};
+
+const formatDateForInput = (date) => {
+  if (!date) return "";
+  // แปลงจาก UTC ไปเป็นเวลาท้องถิ่น (GMT+7) โดยไม่เปลี่ยนแปลงวัน
+  const localDate = new Date(date);
+  // การแปลงให้เป็นโซนเวลา GMT+7 (ไม่สนใจเวลา)
+  localDate.setHours(localDate.getHours() + 7); // บวก 7 ชั่วโมง เพื่อให้ตรงกับ GMT+7
+  return localDate.toISOString().split('T')[0]; // แสดงเฉพาะวันที่ในฟอร์แมต YYYY-MM-DD
+};
   const handleCancelEdit = () => {
     setUpdatedCustomer(null); // ปิดฟอร์มแก้ไขโดยไม่บันทึกข้อมูล
   };
@@ -269,24 +317,24 @@ const handleSaveCustomer = async () => {
                 onChange={(e) => setUpdatedCustomer({ ...updatedCustomer, name: e.target.value })}
                 placeholder="ชื่อ-นามสกุล"
               />
-              <Input
-                value={updatedCustomer.phone}
-                maxLength={20} // จำกัดจำนวนตัวอักษร
-                onChange={(e) => setUpdatedCustomer({ ...updatedCustomer, phone: e.target.value })}
-                placeholder="เบอร์โทรศัพท์"
-              />
-              <Input
-                value={updatedCustomer.nationalId}
-                maxLength={13} // จำกัดให้กรอกได้ 13 ตัว
-                onChange={(e) => setUpdatedCustomer({ ...updatedCustomer, nationalId: e.target.value })}
-                placeholder="รหัสประจำตัวประชาชน"
-              />
-              <Input
-                type="date"
-                value={updatedCustomer.dateOfBirth ? updatedCustomer.dateOfBirth.split('T')[0] : ""}  // แก้ไขให้แสดงวันที่โดยไม่ใช้ new Date()
-                onChange={(e) => setUpdatedCustomer({ ...updatedCustomer, dateOfBirth: e.target.value })}
-                placeholder="วันเกิด"
-              />
+                <Input
+                  value={updatedCustomer.phone}
+                  maxLength={12} 
+                  onChange={handlePhoneChange}
+                  placeholder="เบอร์โทรศัพท์"
+                />
+                <Input
+                  value={updatedCustomer.nationalId}
+                  maxLength={13} // จำกัดให้กรอกได้ 13 ตัว
+                  onChange={handleNationalIdChange}
+                  placeholder="รหัสประจำตัวประชาชน"
+                />
+                  <Input
+                  type="date"
+                  value={updatedCustomer.dateOfBirth ? formatDateForInput(updatedCustomer.dateOfBirth) : ""}
+                  onChange={handleDateChange}
+                  placeholder="วันเกิด"
+                />
               <Input
                 value={updatedCustomer.address?.raw || ""}
                 maxLength={500} // จำกัดจำนวนตัวอักษร
